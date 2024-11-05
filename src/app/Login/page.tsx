@@ -20,7 +20,7 @@ export default function Page() {
     const [input, setInput] = useState<string>('');
     const [inputError, setInputError] = useState<string>('');
 
-    const { error, isLoading, sendRequest } = useHttp<phoneOrEmail>();
+    const { error, sendRequest } = useHttp<phoneOrEmail>();
 
     const validateInput = (input: string) => {
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -52,7 +52,7 @@ export default function Page() {
             isValid: false
         };
     };
-
+    
     const handleSubmit = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
 
@@ -79,6 +79,8 @@ export default function Page() {
             setInputError(error instanceof Error ? error.message : 'An error occurred');
         }
     };
+    console.log(error);
+    
     return (
         <>
             <LoginNav />
