@@ -56,7 +56,7 @@ const useHttp = <T>(): HttpResponse<T> => {
             }
 
             // console.log(JSON.stringify(requestConfig.data));
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}${requestConfig.url}`, requestOptions);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/${requestConfig.url}`, requestOptions);
 
             if (!response.ok) {
                 throw new Error(`Request failed with status ${response.status}`);
