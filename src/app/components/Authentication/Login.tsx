@@ -1,27 +1,33 @@
 "use client"
 
 import { useState } from "react";
-import LoginNav from "../components/navbar/LoginNav";
-import useHttp from "../hooks/use-http";
-import { useRouter } from "next/navigation";
+import LoginNav from "../navbar/LoginNav";
+import useHttp from "../../hooks/use-http";
+import { useRouter, usePathname } from "next/navigation";
+import { useOtpStore } from "@/app/store/otpStore";
 
 interface phoneOrEmail {
+    userId: string;
     input: string
 }
 
-type AuthType = 'EMAIL' | 'PHONE';
+type AuthType = 'Email' | 'PhoneNo';
 
 interface AuthRequest {
+    role: string,
     email?: string;
-    phone?: string;
+    phoneNo?: string;
     authType: AuthType;
 }
 
-export default function Page() {    
+export default function Login() {
     const [input, setInput] = useState<string>('');
     const [inputError, setInputError] = useState<string>('');
     const router = useRouter();
     const { error, sendRequest, isLoading } = useHttp<phoneOrEmail>();
+    const pathName = usePathname();
+    const role = pathName.split('/')[1];
+    const setOtpData = useOtpStore(state => state.setOtpData);
 
     const validateInput = (input: string) => {
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -31,7 +37,7 @@ export default function Page() {
 
         if (emailPattern.test(cleanInput)) {
             return {
-                type: 'EMAIL' as AuthType,
+                type: 'Email' as AuthType,
                 value: cleanInput,
                 isValid: true
             };
@@ -41,7 +47,7 @@ export default function Page() {
         const cleanPhone = cleanInput.replace(/[^\d+]/g, '');
         if (phonePattern.test(cleanInput)) {
             return {
-                type: 'PHONE' as AuthType,
+                type: 'PhoneNo' as AuthType,
                 value: cleanPhone,
                 isValid: true
             };
@@ -53,7 +59,7 @@ export default function Page() {
             isValid: false
         };
     };
-    
+
     const handleSubmit = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
 
@@ -65,23 +71,31 @@ export default function Page() {
                 return;
             }
 
-            const requestData: AuthRequest = validation.type === 'EMAIL'
-                ? { email: validation.value, authType: 'EMAIL' }
-                : { phone: validation.value, authType: 'PHONE' };
-
+            const requestData: AuthRequest = validation.type === 'Email'
+                ? { email: validation.value, authType: 'Email', role: role }
+                : { phoneNo: validation.value, authType: 'PhoneNo', role: role };
+            
+            console.log(requestData);
+            
             sendRequest({
                 url: "auth/initiate",
                 method: "POST",
                 data: requestData
-            }, (newUser) => {
-                console.log(newUser);
-                 router.push(`/OtpVerification?phone=${input}`)
+            }, (user) => {
+                setOtpData({
+                    contactOrEmail: input,
+                    authType: requestData.authType,
+                    role: role,
+                    userId: user.userId
+                })
+                console.log(user);
+                router.push('/OtpVerification')
             })
         } catch (error) {
             setInputError(error instanceof Error ? error.message : 'An error occurred');
         }
     };
-   
+
     return (
         <>
             <LoginNav />
@@ -106,16 +120,16 @@ export default function Page() {
 
                         {(error || inputError) && (
                             <div className="flex items-center space-x-2 text-red-500 text-sm mt-1">
-                                <svg 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    className="h-4 w-4" 
-                                    viewBox="0 0 20 20" 
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    viewBox="0 0 20 20"
                                     fill="currentColor"
                                 >
-                                    <path 
-                                        fillRule="evenodd" 
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
-                                        clipRule="evenodd" 
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clipRule="evenodd"
                                     />
                                 </svg>
                                 <span>{`${inputError}` || `${Error}`}</span>
@@ -133,29 +147,29 @@ export default function Page() {
                     >
                         {isLoading ? (
                             <div className="flex items-center justify-center">
-                                <svg 
-                                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    fill="none" 
+                                <svg
+                                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
                                     viewBox="0 0 24 24"
                                 >
-                                    <circle 
-                                        className="opacity-25" 
-                                        cx="12" 
-                                        cy="12" 
-                                        r="10" 
-                                        stroke="currentColor" 
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
                                         strokeWidth="4"
                                     />
-                                    <path 
-                                        className="opacity-75" 
-                                        fill="currentColor" 
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                     />
                                 </svg>
                                 Processing...
                             </div>
-                        ) :(
+                        ) : (
                             'Continue'
                         )}
                         {/* Continue */}

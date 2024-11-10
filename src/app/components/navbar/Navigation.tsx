@@ -3,7 +3,7 @@
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/react'
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import React, { useState } from 'react';
-import NavDropdown from './NavDropdown';
+import NavDropdown from '../Authentication/NavDropdown';
 
 interface NavigationItem {
   name: string;
@@ -12,7 +12,7 @@ interface NavigationItem {
 
 const NavigationItems: NavigationItem[] = [
   { name: 'Service Provider', href: '/serviceprovider' },
-  { name: 'Request', href: '#' },
+  { name: 'Service Requester', href: '#' },
 ]
 interface DropdownItem {
   title: string;
@@ -25,12 +25,25 @@ const loginOptions: DropdownItem[] = [
   {
     title: 'Sign in to Service Provider',
     description: 'Access your service provider account',
-    href: '/Login',
+    href: '/provider',
   },
   {
     title: 'Sign in to Service Requester',
     description: 'Access your customer account',
-    href: '/Login',
+    href: '/requester',
+  },
+];
+
+const signupOptions: DropdownItem[] = [
+  {
+    title: 'Sign up as Service Provider',
+    description: 'Start providing services on our platform',
+    href: '/provider',
+  },
+  {
+    title: 'Sign up as Service Requester',
+    description: 'Join to request services',
+    href: '/requester',
   },
 ];
 
@@ -47,19 +60,6 @@ const Navigation = () => {
     setLoginOpen(false);
     setSignupOpen(!signupOpen);
   }
-
-  const signupOptions: DropdownItem[] = [
-    {
-      title: 'Sign up as Service Provider',
-      description: 'Start providing services on our platform',
-      href: '/signup/provider',
-    },
-    {
-      title: 'Sign up as Service Requester',
-      description: 'Join to request services',
-      href: '/signup/requester',
-    },
-  ];
 
   return (
     <Disclosure as="nav" className="bg-black">
