@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react";
-import LoginNav from "../navbar/LoginNav";
 import useHttp from "../../hooks/use-http";
 import { useRouter, usePathname } from "next/navigation";
 import { useOtpStore } from "@/app/store/otpStore";
+import LoginNav from "@/app/components/navbar/LoginNav"
 
 interface phoneOrEmail {
     userId: string;
