@@ -4,7 +4,7 @@ import { useState } from "react";
 import useHttp from "../../hooks/use-http";
 import { useRouter, usePathname } from "next/navigation";
 import { useOtpStore } from "@/app/store/otpStore";
-import LoginNav from "@/app/components/navbar/LoginNav"
+import LoginNav from "@/app/components/navbar/LoginNavbar"
 
 interface phoneOrEmail {
     userId: string;

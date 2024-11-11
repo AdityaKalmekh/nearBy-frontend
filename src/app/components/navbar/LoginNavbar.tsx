@@ -1,6 +1,6 @@
 import { Disclosure } from "@headlessui/react"
 
-export default function LoginNav() {
+const LoginNavbar = () => {
     return (
         <Disclosure as="nav" className="bg-black">
             <>
@@ -17,3 +17,4 @@ export default function LoginNav() {
         </Disclosure>
     )
 }
+export default LoginNavbar

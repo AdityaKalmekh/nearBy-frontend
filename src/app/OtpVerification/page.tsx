@@ -3,7 +3,7 @@
 import React, { useState, ChangeEvent, KeyboardEvent, useEffect, useRef } from 'react';
 import { VerificationState } from '../types/verification';
 import { useRouter } from "next/navigation";
-import LoginNav from "@/app/components/navbar/LoginNav";
+import LoginNav from "@/app/components/navbar/LoginNavbar";
 import { useOtpStore } from '../store/otpStore';
 import useHttp from '../hooks/use-http';
 import { Loader2 } from 'lucide-react';
