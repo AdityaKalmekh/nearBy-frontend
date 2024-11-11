@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, ChangeEvent, KeyboardEvent, useEffect } from 'react';
+import React, { useState, ChangeEvent, KeyboardEvent, useEffect, useRef } from 'react';
 import { VerificationState } from '../types/verification';
 import { useRouter } from "next/navigation";
 import LoginNav from "@/app/components/navbar/LoginNav";
@@ -12,12 +12,22 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const Page = () => {
     const otpData = useOtpStore(state => state.otpData);
     const clearOtpData = useOtpStore(state => state.clearOtpData);
-    const { error, sendRequest, isLoading} = useHttp();
+    const { error , sendRequest, isLoading } = useHttp();
     const router = useRouter();
-   
-    if (!otpData?.contactOrEmail){
-        router.push(`/${otpData?.role}`);
-    }
+    const hasMounted = useRef(false);
+
+    useEffect(() => {
+        if (!hasMounted.current){
+            hasMounted.current = true;
+            return;
+        }
+
+        if (!otpData?.contactOrEmail){
+            router.push(`/${otpData?.role}`);
+        }
+
+        return () => clearOtpData();
+    },[clearOtpData, otpData, router]);
 
     const initialState: VerificationState = {
         code: ['', '', '', ''],
@@ -53,15 +63,15 @@ const Page = () => {
                 if (nextInput instanceof HTMLInputElement) {
                     nextInput.focus();
                 }
-            } else if (index === 3){
+            } else if (index === 3) {
                 const otp = newCode.join('');
-                const verificationData = {...otpData, otp};
+                const verificationData = { ...otpData, otp };
                 console.log(verificationData);
                 sendRequest({
                     url: "auth/verify",
                     method: "POST",
                     data: verificationData
-                },(userVerification) => console.log(userVerification))
+                }, (userVerification) => console.log(userVerification))
             }
         }
     };
@@ -100,24 +110,24 @@ const Page = () => {
 
     return (
         <div className="min-h-screen bg-white relative">
-             {/* Fullscreen Loader */}
-             {isLoading && (
+            {/* Fullscreen Loader */}
+            {isLoading && (
                 <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
                     <Loader2 className="h-8 w-8 animate-spin text-black" />
                 </div>
             )}
 
-             {/* Error Message */}
-             {error && (
+            {/* Error Message */}
+            {error && (
                 <Alert variant="destructive" className="fixed top-4 right-4 w-auto max-w-md z-50">
                     <AlertDescription>
-                        {error}
+                        {error.message}
                     </AlertDescription>
                 </Alert>
-            )}  
+            )}
 
             {/* Header */}
-            <LoginNav/>
+            <LoginNav />
 
             {/* Main Content */}
             <main className="max-w-md mx-auto p-6">
