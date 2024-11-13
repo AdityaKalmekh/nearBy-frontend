@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 interface BaseRequestConfig {
     url: string;
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     headers?: Record<string, string>;
     credentials?: RequestCredentials;
 }
@@ -12,7 +12,7 @@ interface GetRequestConfig extends BaseRequestConfig {
 }
 
 interface JsonRequestConfig<T> extends BaseRequestConfig {
-    method: 'POST' | 'PUT' | 'DELETE';
+    method: 'POST' | 'PUT' | 'DELETE' | 'PATCH';
     data: T;
 }
 

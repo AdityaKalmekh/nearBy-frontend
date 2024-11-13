@@ -9,25 +9,37 @@ import useHttp from '../hooks/use-http';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+interface UserVerification {
+    success: string,
+    code: number,
+    message: string,
+    user: {
+        id: string,
+        status: string,
+        verifiedEmail: boolean,
+        verifiedPhoneNo: boolean
+    }
+}
+
 const Page = () => {
     const otpData = useOtpStore(state => state.otpData);
     const clearOtpData = useOtpStore(state => state.clearOtpData);
-    const { error , sendRequest, isLoading } = useHttp();
+    const { error, sendRequest, isLoading } = useHttp();
     const router = useRouter();
     const hasMounted = useRef(false);
 
     useEffect(() => {
-        if (!hasMounted.current){
+        if (!hasMounted.current) {
             hasMounted.current = true;
             return;
         }
 
-        if (!otpData?.contactOrEmail){
+        if (!otpData?.contactOrEmail) {
             router.push(`/${otpData?.role}`);
         }
 
         return () => clearOtpData();
-    },[clearOtpData, otpData, router]);
+    }, [clearOtpData, otpData, router]);
 
     const initialState: VerificationState = {
         code: ['', '', '', ''],
@@ -66,12 +78,23 @@ const Page = () => {
             } else if (index === 3) {
                 const otp = newCode.join('');
                 const verificationData = { ...otpData, otp };
-                console.log(verificationData);
                 sendRequest({
                     url: "auth/verify",
                     method: "POST",
                     data: verificationData
-                }, (userVerification) => console.log(userVerification))
+                }, (response) => {
+                    const userVerification = response as UserVerification;
+                    if (userVerification?.user?.status) {
+                        const status = userVerification.user.status;
+                        if (status === 'pending') {
+                            router.push("/signup");
+                        }else if (verificationData.role === 0){
+                            console.log("provider dashboard");
+                        }else if (verificationData.role === 1){
+                            console.log("requester dashboard");
+                        }
+                    }
+                });
             }
         }
     };
@@ -119,7 +142,7 @@ const Page = () => {
 
             {/* Error Message */}
             {error && (
-                <Alert variant="destructive" className="fixed top-4 right-4 w-auto max-w-md z-50">
+                <Alert variant="destructive" className="fixed top-16 right-4 w-auto max-w-md z-50">
                     <AlertDescription>
                         {error.message}
                     </AlertDescription>

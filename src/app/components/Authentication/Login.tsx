@@ -7,6 +7,7 @@ import { useOtpStore } from "@/app/store/otpStore";
 import LoginNav from "@/app/components/navbar/LoginNavbar"
 
 interface phoneOrEmail {
+    role: number;
     userId: string;
     input: string
 }
@@ -85,10 +86,9 @@ export default function Login() {
                 setOtpData({
                     contactOrEmail: input,
                     authType: requestData.authType,
-                    role: role,
+                    role: user?.role,
                     userId: user.userId
                 })
-                console.log(user);
                 router.push('/OtpVerification')
             })
         } catch (error) {

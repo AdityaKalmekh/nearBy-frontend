@@ -8,7 +8,8 @@ const LoginNavbar = () => {
                     <div className="relative flex h-14 items-center justify-between">
                         <div className="flex items-center">
                             <div className="mr-4 flex-shrink-0">
-                                <a className='text-white text-xl'>NearBy</a>
+                                {/* <a className='text-white text-2xl font-medium'>NearBy</a> */}
+                                <a className='text-white text-2xl'>NearBy</a>
                             </div>
                         </div>
                     </div>

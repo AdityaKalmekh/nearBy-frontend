@@ -5,7 +5,7 @@ interface OtpState {
     otpData: {
         contactOrEmail: string,
         authType: string,
-        role: string,
+        role: number,
         userId: string
     } | null;
     setOtpData: (data: OtpState['otpData']) => void;
