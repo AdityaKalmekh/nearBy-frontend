@@ -57,12 +57,15 @@ const useHttp = <T>(): HttpResponse<T> => {
 
             // console.log(JSON.stringify(requestConfig.data));
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/${requestConfig.url}`, requestOptions);
-
+            const responseData = await response.json();
+            
             if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}`);
+                // throw new Error(`Request failed with status ${response.status}`);
+                const errorMessage = responseData.message || responseData.error || 'Something went wrong';
+                throw new Error(errorMessage);
             }
 
-            const responseData = await response.json();
+            // const responseData = await response.json();
             applyData(responseData);
         } catch (err) {
             setError(err instanceof Error ? err : new Error('Something went wrong'));

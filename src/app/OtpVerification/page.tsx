@@ -27,6 +27,12 @@ const Page = () => {
     const { error, sendRequest, isLoading } = useHttp();
     const router = useRouter();
     const hasMounted = useRef(false);
+    const initialState: VerificationState = {
+        code: ['', '', '', ''],
+        timer: 2,
+        phoneNoOrEmail: otpData?.contactOrEmail ? `0${otpData.contactOrEmail}` : ''
+    };
+    const [state, setState] = useState<VerificationState>(initialState);
 
     useEffect(() => {
         if (!hasMounted.current) {
@@ -37,28 +43,8 @@ const Page = () => {
         if (!otpData?.contactOrEmail) {
             router.push(`/${otpData?.role}`);
         }
-
-        return () => clearOtpData();
+        // return () => clearOtpData();
     }, [clearOtpData, otpData, router]);
-
-    const initialState: VerificationState = {
-        code: ['', '', '', ''],
-        timer: 2,
-        phoneNoOrEmail: otpData?.contactOrEmail ? `0${otpData.contactOrEmail}` : ''
-    };
-
-    const [state, setState] = useState<VerificationState>(initialState);
-
-    // useEffect(() => {
-    //     const interval = setInterval(() => {
-    //         setState(prevState => ({
-    //             ...prevState,
-    //             timer: prevState.timer > 0 ? prevState.timer - 1 : 0
-    //         }));
-    //     }, 1000);
-
-    //     return () => clearInterval(interval);
-    // }, []);
 
     const handleInputChange = (index: number, value: string): void => {
         if (value.length <= 1 && /^\d*$/.test(value)) {
@@ -88,10 +74,12 @@ const Page = () => {
                         const status = userVerification.user.status;
                         if (status === 'pending') {
                             router.push("/signup");
+                        }else if (status === 'service_details_pending'){
+                            router.push("/provider/services");
                         }else if (verificationData.role === 0){
-                            console.log("provider dashboard");
+                            router.push("/provider/dashboard");
                         }else if (verificationData.role === 1){
-                            console.log("requester dashboard");
+                            router.push("/requester/dashboard");
                         }
                     }
                 });
@@ -183,6 +171,7 @@ const Page = () => {
                                 className="w-12 h-12 text-center border-2 border-gray-300 rounded-lg text-xl 
                             focus:border-black focus:outline-none transition-colors"
                                 aria-label={`Digit ${index + 1}`}
+                                autoComplete='off'
                             />
                         ))}
                     </div>

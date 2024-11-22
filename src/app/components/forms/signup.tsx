@@ -7,15 +7,19 @@ import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import LoginNavbar from '../navbar/LoginNavbar';
 import useHttp from '@/app/hooks/use-http';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOtpStore } from '@/app/store/otpStore';
+import { useRouter } from 'next/navigation';
 
 interface FormData {
     firstName: string;
     lastName: string;
 }
-
 interface FormErrors {
     firstName?: string;
     lastName?: string;
+}
+interface SignUpResponse {
+    success: boolean;
 }
 
 const SignUpForm = () => {
@@ -27,6 +31,8 @@ const SignUpForm = () => {
     const [errors, setErrors] = useState<FormErrors>({});
     const [isValid, setIsValid] = useState(false);
     const { error, sendRequest, isLoading } = useHttp();
+    const userData = useOtpStore(state => state.otpData);
+    const router = useRouter();
 
     // Validation rules
     const validateField = (name: string, value: string): string => {
@@ -67,10 +73,16 @@ const SignUpForm = () => {
                 url: "details",
                 method: "PATCH",
                 data: formData
-            }, (userDetail) => {
-                console.log(userDetail);
+            }, (response) => {
+                const userDetail = response as SignUpResponse;
+                if (userDetail.success) {
+                    if (userData?.role === 0) {
+                        router.push("/provider/services");
+                    } else if (userData?.role === 1) {
+                        router.push("/requester/dashboard");
+                    }
+                }
             })
-    
         }
     };
 
@@ -90,8 +102,6 @@ const SignUpForm = () => {
                     </AlertDescription>
                 </Alert>
             )}
-
-
 
             {/* Header */}
             <LoginNavbar />
@@ -122,6 +132,7 @@ const SignUpForm = () => {
                                     onChange={handleInputChange}
                                     aria-invalid={!!errors.firstName}
                                     aria-describedby={errors.firstName ? "firstName-error" : undefined}
+                                    autoComplete='off'
                                 />
                                 {errors.firstName && (
                                     <p id="firstName-error" className="text-sm text-red-500 mt-1">
@@ -144,6 +155,7 @@ const SignUpForm = () => {
                                     onChange={handleInputChange}
                                     aria-invalid={!!errors.lastName}
                                     aria-describedby={errors.lastName ? "lastName-error" : undefined}
+                                    autoComplete='off'
                                 />
                                 {errors.lastName && (
                                     <p id="lastName-error" className="text-sm text-red-500 mt-1">

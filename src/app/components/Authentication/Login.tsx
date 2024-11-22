@@ -76,8 +76,6 @@ export default function Login() {
                 ? { email: validation.value, authType: 'Email', role: role }
                 : { phoneNo: validation.value, authType: 'PhoneNo', role: role };
             
-            console.log(requestData);
-            
             sendRequest({
                 url: "auth/initiate",
                 method: "POST",
@@ -115,6 +113,7 @@ export default function Login() {
                             className={`w-full px-4 py-3 rounded-lg bg-gray-100 border-0 
                                 ${error || inputError ? 'ring-1 ring-red-500' : 'focus:ring-1 focus:ring-black'} 
                                 focus:outline-none text-gray-900 placeholder-gray-500`}
+                            autoComplete="off"
                         />
                         {/* {inputError && <div className="error-message">{inputError}</div>} */}
 
@@ -132,7 +131,7 @@ export default function Login() {
                                         clipRule="evenodd"
                                     />
                                 </svg>
-                                <span>{`${inputError}` || `${Error}`}</span>
+                                <span>{`${inputError}` || `${error?.message}`}</span>
                             </div>
                         )}
                     </div>
