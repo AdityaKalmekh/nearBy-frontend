@@ -1,15 +1,17 @@
 "use client"
 
-import { useState } from "react";
 import useHttp from "../../hooks/use-http";
 import { useRouter, usePathname } from "next/navigation";
 import { useOtpStore } from "@/app/store/otpStore";
-import LoginNav from "@/app/components/navbar/LoginNavbar"
-
-interface phoneOrEmail {
+import LoginNav from "@/app/components/navbar/LoginNavbar";
+import { useForm } from 'react-hook-form';
+interface responseData {
     role: number;
     userId: string;
-    input: string
+}
+
+type FormInputs = {
+    contactInfo: string;
 }
 
 type AuthType = 'Email' | 'PhoneNo';
@@ -22,13 +24,22 @@ interface AuthRequest {
 }
 
 export default function Login() {
-    const [input, setInput] = useState<string>('');
-    const [inputError, setInputError] = useState<string>('');
     const router = useRouter();
-    const { error, sendRequest, isLoading } = useHttp<phoneOrEmail>();
+    const { error, sendRequest, isLoading } = useHttp<responseData>();
     const pathName = usePathname();
     const role = pathName.split('/')[1];
     const setOtpData = useOtpStore(state => state.setOtpData);
+
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+        setError
+    } = useForm<FormInputs>({
+        defaultValues: {
+            contactInfo: ''
+        }
+    })
 
     const validateInput = (input: string) => {
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -55,42 +66,48 @@ export default function Login() {
         }
 
         return {
-            type: null,
             value: cleanInput,
             isValid: false
         };
     };
 
-    const handleSubmit = async (e: { preventDefault: () => void; }) => {
-        e.preventDefault();
-
+    const onSubmit = async (data: FormInputs) => {
         try {
-            const validation = validateInput(input);
+            const validation = validateInput(data.contactInfo);
 
             if (!validation.isValid) {
-                setInputError('Please enter a valid email or phone number');
+                const isPhoneNo = /^\d+(\.\d+)?$/;
+                setError('contactInfo', {
+                    type: 'manual',
+                    message: isPhoneNo.test(validation.value) ?
+                        'Please enter a valid phone number' :
+                        'Please enter a valid email'
+                })
                 return;
             }
 
             const requestData: AuthRequest = validation.type === 'Email'
                 ? { email: validation.value, authType: 'Email', role: role }
                 : { phoneNo: validation.value, authType: 'PhoneNo', role: role };
-            
+
             sendRequest({
                 url: "auth/initiate",
                 method: "POST",
                 data: requestData
             }, (user) => {
                 setOtpData({
-                    contactOrEmail: input,
+                    contactOrEmail: data.contactInfo,
                     authType: requestData.authType,
                     role: user?.role,
                     userId: user.userId
                 })
                 router.push('/OtpVerification')
-            })
+            });
         } catch (error) {
-            setInputError(error instanceof Error ? error.message : 'An error occurred');
+            setError('contactInfo', {
+                type: 'manual',
+                message: error instanceof Error ? error.message : 'An error occurred'
+            });
         }
     };
 
@@ -98,7 +115,7 @@ export default function Login() {
         <>
             <LoginNav />
             <div className="w-full max-w-sm mx-auto p-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                     <div className="space-y-2">
                         <h1 className="text-xl font-semibold text-gray-900">
                             What&apos;s your phone number or email?
@@ -106,45 +123,29 @@ export default function Login() {
 
                         <input
                             type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value.trim())}
+                            {...register('contactInfo', {
+                                required: 'Please enter a phone number or email'
+                            })}
+                            disabled={isLoading || isSubmitting}
                             placeholder="Enter phone number or email"
-                            // className="w-full px-4 py-3 rounded-lg bg-gray-100 border-0 focus:ring-1 focus:ring-black focus:outline-none text-gray-900 placeholder-gray-500"
-                            className={`w-full px-4 py-3 rounded-lg bg-gray-100 border-0 
-                                ${error || inputError ? 'ring-1 ring-red-500' : 'focus:ring-1 focus:ring-black'} 
-                                focus:outline-none text-gray-900 placeholder-gray-500`}
+                            className="w-full px-4 py-3 rounded-lg bg-gray-100 border-0 focus:ring-1 focus:ring-black focus:outline-none text-gray-900 placeholder-gray-500"
                             autoComplete="off"
                         />
-                        {/* {inputError && <div className="error-message">{inputError}</div>} */}
-
-                        {(error || inputError) && (
+                        {(errors.contactInfo || error) && (
                             <div className="flex items-center space-x-2 text-red-500 text-sm mt-1">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                        clipRule="evenodd"
-                                    />
-                                </svg>
-                                <span>{`${inputError}` || `${error?.message}`}</span>
+                                <span>{`${errors.contactInfo?.message}` || `${error?.message}`}</span>
                             </div>
                         )}
                     </div>
 
                     <button
                         type="submit"
-                        disabled={isLoading}
-                        // className="w-full bg-black text-white rounded-lg py-3 px-4 font-medium hover:bg-zinc-800 transition-colors"
+                        disabled={isLoading || isSubmitting}
                         className={`w-full relative bg-black text-white rounded-lg py-3 px-4 font-medium 
                             ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-800'} 
                             transition-colors`}
                     >
-                        {isLoading ? (
+                        {(isLoading || isSubmitting) ? (
                             <div className="flex items-center justify-center">
                                 <svg
                                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -171,7 +172,6 @@ export default function Login() {
                         ) : (
                             'Continue'
                         )}
-                        {/* Continue */}
                     </button>
                 </form>
             </div>
