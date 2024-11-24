@@ -66,12 +66,12 @@ const Navigation = () => {
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4">
-            <div className="relative flex h-16 items-center justify-between">
-              <div className="flex items-center flex-1  ">
+            <div className="relative flex h-14 items-center justify-between">
+              <div className="flex items-center flex-1">
                 <div className="flex-shrink-0">
                   <a className="text-white text-xl">NearBy</a>
                 </div>
-                <div className="hidden lg:ml-6 lg:flex lg:space-x-4">
+                <div className="hidden lg:ml-6 lg:flex lg:space-x-2">
                   {NavigationItems.map((item) => (
                     <a
                       key={item.name}

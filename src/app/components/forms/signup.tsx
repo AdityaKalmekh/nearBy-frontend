@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
@@ -9,81 +8,47 @@ import useHttp from '@/app/hooks/use-http';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useOtpStore } from '@/app/store/otpStore';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 
 interface FormData {
     firstName: string;
     lastName: string;
-}
-interface FormErrors {
-    firstName?: string;
-    lastName?: string;
 }
 interface SignUpResponse {
     success: boolean;
 }
 
 const SignUpForm = () => {
-    const [formData, setFormData] = useState<FormData>({
-        firstName: '',
-        lastName: ''
-    });
 
-    const [errors, setErrors] = useState<FormErrors>({});
-    const [isValid, setIsValid] = useState(false);
     const { error, sendRequest, isLoading } = useHttp();
     const userData = useOtpStore(state => state.otpData);
     const router = useRouter();
-
-    // Validation rules
-    const validateField = (name: string, value: string): string => {
-        if (!value.trim()) {
-            return `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm<FormData>({
+        defaultValues: {
+            firstName: '',
+            lastName: ''
         }
-        if (value.trim().length < 2) {
-            return `${name.charAt(0).toUpperCase() + name.slice(1)} must be at least 2 characters`;
-        }
-        if (!/^[a-zA-Z\s-']+$/.test(value)) {
-            return `${name.charAt(0).toUpperCase() + name.slice(1)} can only contain letters, spaces, hyphens, and apostrophes`;
-        }
-        return '';
-    };
+    })
 
-    // Validate form on data change
-    useEffect(() => {
-        const newErrors: FormErrors = {};
-        newErrors.firstName = validateField('firstName', formData.firstName);
-        newErrors.lastName = validateField('lastName', formData.lastName);
-
-        setErrors(newErrors);
-        setIsValid(!newErrors.firstName && !newErrors.lastName);
-    }, [formData]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (isValid) {
-            sendRequest({
-                url: "details",
-                method: "PATCH",
-                data: formData
-            }, (response) => {
-                const userDetail = response as SignUpResponse;
-                if (userDetail.success) {
-                    if (userData?.role === 0) {
-                        router.push("/provider/services");
-                    } else if (userData?.role === 1) {
-                        router.push("/requester/dashboard");
-                    }
+    const onSubmit = async (formData: FormData) => {
+        sendRequest({
+            url: "details",
+            method: "PATCH",
+            data: formData
+        }, (response) => {
+            const userDetail = response as SignUpResponse;
+            if (userDetail.success) {
+                if (userData?.role === 0) {
+                    router.push("/provider/services");
+                } else if (userData?.role === 1) {
+                    router.push("/requester/dashboard");
                 }
-            })
-        }
+            }
+        })
     };
 
     return (
@@ -117,26 +82,27 @@ const SignUpForm = () => {
                             </p>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                             <div className="space-y-2">
                                 <label htmlFor="firstName" className="text-sm font-medium">
                                     First name
                                 </label>
                                 <Input
                                     id="firstName"
+                                    {...register('firstName', {
+                                        required: { value: true, message: 'First Name is required' },
+                                        minLength: { value: 2, message: "First Name must be at least 2 characters" },
+                                        pattern: { value: /^[a-zA-Z\s-']+$/, message: "First Name can only contain letters, spaces, hyphens, and apostrophes" }
+                                    })}
+                                    className="bg-gray-200 focus:bg-white"
+                                    disabled={isSubmitting}
                                     name="firstName"
                                     placeholder="Enter first name"
-                                    className={`w-full h-12 transition-all duration-200 hover:ring-2 hover:ring-gray-200 focus:ring-2 focus:ring-black
-                    ${errors.firstName && 'border-red-500 focus:ring-red-500'}`}
-                                    value={formData.firstName}
-                                    onChange={handleInputChange}
-                                    aria-invalid={!!errors.firstName}
-                                    aria-describedby={errors.firstName ? "firstName-error" : undefined}
                                     autoComplete='off'
                                 />
                                 {errors.firstName && (
                                     <p id="firstName-error" className="text-sm text-red-500 mt-1">
-                                        {errors.firstName}
+                                        {errors.firstName.message}
                                     </p>
                                 )}
                             </div>
@@ -147,19 +113,20 @@ const SignUpForm = () => {
                                 </label>
                                 <Input
                                     id="lastName"
+                                    {...register('lastName', {
+                                        required: { value: true, message: 'Last Name is required' },
+                                        minLength: { value: 2, message: "Last Name must be at least 2 characters" },
+                                        pattern: { value: /^[a-zA-Z\s-']+$/, message: "Last Name can only contain letters, spaces, hyphens, and apostrophes" }
+                                    })}
+                                    className="bg-gray-200 focus:bg-white"
+                                    disabled={isSubmitting}
                                     name="lastName"
                                     placeholder="Enter last name"
-                                    className={`w-full h-12 transition-all duration-200 hover:ring-2 hover:ring-gray-200 focus:ring-2 focus:ring-black
-                    ${errors.lastName && 'border-red-500 focus:ring-red-500'}`}
-                                    value={formData.lastName}
-                                    onChange={handleInputChange}
-                                    aria-invalid={!!errors.lastName}
-                                    aria-describedby={errors.lastName ? "lastName-error" : undefined}
                                     autoComplete='off'
                                 />
                                 {errors.lastName && (
                                     <p id="lastName-error" className="text-sm text-red-500 mt-1">
-                                        {errors.lastName}
+                                        {errors.lastName.message}
                                     </p>
                                 )}
                             </div>
@@ -179,7 +146,6 @@ const SignUpForm = () => {
                                     type="submit"
                                     size="lg"
                                     className="rounded-full bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                                    disabled={!isValid}
                                 >
                                     Next
                                     <ArrowRight className="h-4 w-4 ml-2" />

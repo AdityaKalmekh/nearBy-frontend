@@ -46,16 +46,18 @@ const VisitingChargeModal: React.FC<VisitingChargeModalProps> = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle>Set Visiting Charge for {selectedService}</DialogTitle>
+            <DialogContent className="w-11/12 max-w-lg mx-auto rounded-lg p-6 sm:max-w-[425px]">
+                <DialogHeader className="space-y-3">
+                    <DialogTitle className="text-xl font-semibold text-center sm:text-left">
+                        Set Visiting Charge for {selectedService}
+                    </DialogTitle>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="visitingCharge" className="text-right">
+                <div className="flex flex-col space-y-4 py-4">
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+                        <Label htmlFor="visitingCharge" className="text-sm font-medium sm:w-1/4 sm:text-right">
                             Amount
                         </Label>
-                        <div className="col-span-3">
+                        <div className="flex-1">
                             <Input
                                 id="visitingCharge"
                                 type="number"
@@ -73,11 +75,20 @@ const VisitingChargeModal: React.FC<VisitingChargeModalProps> = ({
                         </div>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
+                <DialogFooter className="flex flex-col space-y-2 sm:flex-row sm:justify-end sm:space-y-0 sm:space-x-2">
+                    <Button 
+                        variant="outline" 
+                        onClick={onClose}
+                        className="w-full sm:w-auto"
+                    >
                         Cancel
                     </Button>
-                    <Button onClick={handleSave}>Save</Button>
+                    <Button 
+                        onClick={handleSave}
+                        className="w-full sm:w-auto"    
+                    >   
+                        Save
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
