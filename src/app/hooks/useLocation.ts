@@ -1,14 +1,37 @@
 import { useState } from 'react';
 
-interface LocationData {
-    // latitude: number;
-    // longitude: number;
-    coordinates: [number,number];
-    accuracy?: number;
-    source: 'BROWSER' | 'IP';
+export enum LocationSource {
+    BROWSER = 'BROWSER',
+    IP = 'IP',
+    GOOGLE = 'GOOGLE'
 }
 
-type LocationStatus = 'idle' | 'loading' | 'success' | 'error' | 'denied';
+export enum LocationStatus {
+    IDLE = 'idle',
+    LOADING = 'loading',
+    SUCCESS = 'success',
+    ERROR = 'error',
+    DENIED = 'denied'
+}
+
+// Type definitions with readonly properties for immutability
+export type Coordinates = readonly [number, number];
+export interface LocationData {
+    readonly coordinates: Coordinates;
+    readonly accuracy?: number;
+    readonly source: LocationSource;
+}
+export interface LocationError {
+    readonly message: string;
+    readonly isDenied: boolean;
+    readonly code?: string;
+    readonly name: string;
+}
+
+export interface LocationResult {
+    readonly data: LocationData;
+    readonly isDenied: boolean;
+}
 
 interface UseLocationResult {
     location: LocationData | null;
@@ -18,19 +41,160 @@ interface UseLocationResult {
     // resetLocation: () => void;
 }
 
-class LocationError extends Error {
-    constructor(
-        message: string,
-        public isDenied: boolean = false,
-        public code?: string
-    ) {
-        super(message);
-        this.name = 'LocationError';
-    }
+const isLocationError = (error: unknown): error is LocationError => {
+    return error instanceof Error && 'isDenied' in error;
+};
+
+// Utility type for location method functions
+type LocationMethod<T> = () => Promise<T>;
+
+
+// Pure function to create a location error
+const createLocationError = (
+    message: string,
+    isDenied: boolean = false,
+    code?: string
+): Error & { isDenied: boolean; code?: string } => ({
+    ...new Error(message),
+    name: 'LocationError',
+    isDenied,
+    code
+});
+
+const isValidCoordinates = (coordinates: Coordinates): boolean => {
+    const [longitude, latitude] = coordinates;
+    return !isNaN(latitude) &&
+        !isNaN(longitude) &&
+        latitude >= -90 &&
+        latitude <= 90 &&
+        longitude >= -180 &&
+        longitude <= 180;
+};
+
+const formatLocationData = (
+    coordinates: Coordinates,
+    accuracy: number | undefined,
+    source: LocationData['source']
+): LocationData => ({
+    coordinates,
+    accuracy,
+    source
+});
+
+
+// Google Maps Geolocation API response type
+interface GoogleGeolocationResponse {
+    location: {
+        lat: number;
+        lng: number;
+    };
+    accuracy: number;
 }
 
+// Google Maps Geolocation API handler
+const getGoogleLocation = async (apiKey: string): Promise<LocationData> => {
+    
+    if (!apiKey){
+        throw new Error("Google maps API key is missing");
+    }
+
+    const response = await fetch(`https://www.googleapis.com/geolocation/v1/geolocate?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            considerIp: true,
+            radioType: "gsm",
+            carrier: "Wifi"
+        })
+    });
+
+    if (!response.ok) {
+        throw createLocationError('Failed to get Google location');
+    }
+
+    const data = await response.json() as GoogleGeolocationResponse;
+
+    return formatLocationData(
+        [data.location.lng, data.location.lat],
+        data.accuracy,
+        LocationSource.GOOGLE
+    );
+};
+
+
+// Browser Geolocation handler
+const getBrowserLocation = (): Promise<LocationResult> => {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(createLocationError('Geolocation is not supported by your browser'));
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    data: formatLocationData(
+                        [position.coords.longitude, position.coords.latitude],
+                        position.coords.accuracy,
+                        LocationSource.BROWSER
+                    ),
+                    isDenied: false
+                });
+            },
+            (error: GeolocationPositionError) => {
+                const errorMessages: Record<number, string> = {
+                    [GeolocationPositionError.PERMISSION_DENIED]:
+                        'Location access was denied. Please enable location services in your browser settings to continue.',
+                    [GeolocationPositionError.POSITION_UNAVAILABLE]:
+                        'Location information is currently unavailable.',
+                    [GeolocationPositionError.TIMEOUT]:
+                        'Location request timed out.'
+                };
+
+                reject({
+                    error: createLocationError(
+                        errorMessages[error.code] || 'Failed to get browser location',
+                        error.code === error.PERMISSION_DENIED,
+                        error.code.toString()
+                    ),
+                    isDenied: error.code === error.PERMISSION_DENIED
+                });
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
+};
+
+// IP-based Location handler
+const getIpBasedLocation = async (): Promise<LocationData> => {
+    const response = await fetch('https://ipapi.co/json/');
+
+    if (!response.ok) {
+        throw createLocationError('Failed to get IP-based location');
+    }
+
+    const data = await response.json();
+
+    if (!data.latitude || !data.longitude) {
+        throw createLocationError('Invalid location data received');
+    }
+
+    return formatLocationData(
+        [parseFloat(data.longitude), parseFloat(data.latitude)],
+        10000, // IP geolocation is typically accurate to ~10km
+        LocationSource.IP
+    );
+};
+
+
 export const useLocation = (): UseLocationResult => {
-    const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
+    const [locationStatus, setLocationStatus] = useState<LocationStatus>(LocationStatus.IDLE);
     const [locationError, setLocationError] = useState<string>('');
     const [location, setLocation] = useState<LocationData | null>(null);
 
@@ -40,161 +204,77 @@ export const useLocation = (): UseLocationResult => {
     //     setLocation(null);
     // };
 
-    // Browser Geolocation
-    const getBrowserLocation = (): Promise<{ data: LocationData; isDenied: boolean }> => {
-        return new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject(new Error('Geolocation is not supported by your browser'));
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    resolve({
-                        data: {
-                            // latitude: position.coords.latitude,
-                            // longitude: position.coords.longitude,
-                            coordinates: [position.coords.longitude,position.coords.latitude],
-                            accuracy: position.coords.accuracy,
-                            source: 'BROWSER'
-                        },
-                        isDenied: false
-                    });
-                },
-                (error: GeolocationPositionError) => {
-                    if (error.code === error.PERMISSION_DENIED) {
-                        // setLocationStatus('denied');
-                        // message = 'Location access was denied. Please enable location services in your browser settings to continue.';
-                        reject({
-                            error: new Error('Location access was denied. Please enable location services in your browser settings to continue.'),
-                            isDenied: true
-                        });
-                    } else {
-                        let message = 'Failed to get browser location';
-                        if (error.code === error.POSITION_UNAVAILABLE) {
-                            message = 'Location information is currently unavailable.';
-                        } else if (error.code === error.TIMEOUT) {
-                            message = 'Location request timed out.';
-                        }
-                        reject({ error: new Error(message), isDenied: false });
-                    }
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                }
-            );
-        });
+    const updateState = (
+        newLocation: LocationData | null,
+        newStatus: LocationStatus,
+        newError: string = ''
+    ): void => {
+        setLocation(newLocation);
+        setLocationStatus(newStatus);
+        setLocationError(newError);
     };
 
-    // IP-based Location
-    async function getIpBasedLocation(): Promise<LocationData> {
-        setLocationStatus('loading');
-        setLocationError('');
-
+    // Try each location method in sequence 
+    const tryLocationMethod = async <T extends LocationData>(
+        method: LocationMethod<T>,
+        methodName: string
+    ): Promise<T> => {
         try {
-            const response = await fetch('https://ipapi.co/json/');
-            if (!response.ok) {
-                throw new Error('Failed to get IP-based location');
+            const result = await method();
+            if (!isValidCoordinates(result.coordinates)) {
+                throw createLocationError(`Invalid coordinates from ${methodName}`);
             }
-
-            const data = await response.json();
-
-            if (!data.latitude || !data.longitude) {
-                throw new Error('Invalid location data received');
-            }
-
-            const locationData: LocationData = {
-                // latitude: parseFloat(data.latitude),
-                // longitude: parseFloat(data.longitude),
-                coordinates: [parseFloat(data.longitude),parseFloat(data.latitude)],
-                accuracy: 10000, // IP geolocation is typically accurate to ~10km
-                source: 'IP'
-            };
-
-            return locationData;
-
+            return result;
         } catch (error) {
-            console.error('IP location error:', error);
-            setLocationStatus('error');
-            setLocationError('Failed to get IP-based location. Please try again.');
-            throw new Error('Failed to get IP-based location. Please try again.');
+            console.warn(`${methodName} failed:`, error);
+            throw error;
         }
     };
 
-    // Utility function to validate coordinates
-    const isValidCoordinates = (longitude: number, latitude: number): boolean => {
-        return !isNaN(latitude) &&
-            !isNaN(longitude) &&
-            latitude >= -90 &&
-            latitude <= 90 &&
-            longitude >= -180 &&
-            longitude <= 180;
-    };
-
-    const getLocation = async () : Promise<LocationData> => {
-        setLocationStatus('loading');
-        setLocationError('');
-        setLocation(null);
+    const getLocation = async (): Promise<LocationData> => {
+        updateState(null, LocationStatus.LOADING);
 
         try {
-            // Try browser geolocation first
+            // Try browser geolocation
             try {
-                console.log('Attempting browser geolocation...');
                 const { data: browserLocation, isDenied } = await getBrowserLocation();
-
-                console.log(isDenied);
-                
                 if (isDenied) {
-                    setLocationStatus('denied');
-                    throw new Error('Location access was denied. Please enable location services in your browser settings to continue.');
+                    updateState(null, LocationStatus.DENIED);
+                    throw createLocationError('Location access denied', true);
                 }
-
-                if (isValidCoordinates(browserLocation.coordinates[0], browserLocation.coordinates[1])) {
-                    setLocation(browserLocation);
-                    setLocationStatus('success');
-                    console.log('Browser location obtained:', browserLocation);
-                    return browserLocation;
-                }
+                updateState(browserLocation, LocationStatus.SUCCESS);
+                return browserLocation;
             } catch (error) {
-                // Only proceed to IP-based location if it's not a permission denial
-                const locationError = error as LocationError;
-                if (locationError.isDenied) {
-                    console.log("final log");
-                    setLocationStatus('denied');
-                    throw error;
-                }
-                console.warn('Browser geolocation failed:', error);
+                if (isLocationError(error) && error.isDenied) throw error;
 
-
-                // Try IP-based location as fallback
-
+                // Try Google Maps Geolocation API
                 try {
-                    const ipLocation: LocationData = await getIpBasedLocation();
-
-                    if (isValidCoordinates(ipLocation.coordinates[0], ipLocation.coordinates[1])) {
-                        setLocation(ipLocation);
-                        setLocationStatus('success');
-                        console.log('IP-based location obtained:', ipLocation);
-                        return ipLocation;
-                    }
-                } catch (ipError) {
-                    console.error('IP location failed:', ipError);
-                    throw ipError;
+                    const googleMapsApiKey = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
+                    const googleLocation = await tryLocationMethod(
+                        () => getGoogleLocation(googleMapsApiKey),
+                        'Google Maps Geolocation'
+                    );
+                    updateState(googleLocation, LocationStatus.SUCCESS);
+                    return googleLocation;
+                } catch (googleError) {
+                    console.warn('Google Maps Geolocation failed:', googleError); // Use the error
+                    // Try IP-based location as final fallback
+                    const ipLocation = await tryLocationMethod(
+                        getIpBasedLocation,
+                        'IP-based location'
+                    );
+                    updateState(ipLocation, LocationStatus.SUCCESS);
+                    return ipLocation;
                 }
             }
-            throw new Error('Unable to get valid location data');
         } catch (error) {
-            console.error('Final location error:', error);
-            // Don't overwrite 'denied' status if it was already set
-            if (error instanceof Error && error.message.includes('denied')) {
-                setLocationStatus('denied');
-            } else {
-                setLocationStatus('error');
-            }
-            setLocationError(error instanceof Error ? error.message : 'Failed to get location');
-            throw new Error('Unabled to get location');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to get location';
+            updateState(
+                null,
+                LocationStatus.ERROR,
+                errorMessage
+            );
+            throw new Error(errorMessage);
         }
     };
 
@@ -204,5 +284,5 @@ export const useLocation = (): UseLocationResult => {
         locationError,
         getLocation,
         // resetLocation
-    };
+    } as const;
 };

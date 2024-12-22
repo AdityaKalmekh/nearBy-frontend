@@ -13,9 +13,8 @@ import useHttp from "@/app/hooks/use-http";
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
+import { useOtpStore } from "@/app/store/otpStore";
 
-
-// Interface for service items
 interface ServiceItem {
     icon: LucideIcon,
     serviceType: string,
@@ -33,6 +32,20 @@ interface ServiceCardProps {
     serviceType: string;
     selected: boolean;
     onServiceClick: () => void;
+}
+
+type ProviderResponse = {
+    success : boolean,
+    message : string,
+    providerId : string
+}
+
+interface RefactorOtpData {
+    contactOrEmail: string;  
+    authType: string;       
+    role: number;          
+    userId: string;        
+    providerId: string;   
 }
 
 const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -68,6 +81,8 @@ const Page: React.FC = () => {
     const [modalOpen, setModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState<string>('');
     const {error, sendRequest, isLoading} = useHttp();    
+    const setOtpData = useOtpStore(state => state.setOtpData);
+    const otpData = useOtpStore(state => state.otpData);
     const router = useRouter();
 
     const {
@@ -108,7 +123,6 @@ const Page: React.FC = () => {
         setModalOpen(false);
     };
 
-    console.log(selectedServices);
     const handleContinue = async () => {
         const locationDetails = await getLocation();
         const requestData = {locationDetails,selectedServices};
@@ -116,8 +130,17 @@ const Page: React.FC = () => {
             url: 'provider',
             method: 'POST',
             data: requestData
-        },(provider) => {
-            if(provider){
+        },(response) => {
+            const providerResponse = response as ProviderResponse;
+            if(providerResponse?.success){
+                const refactorOtpData : RefactorOtpData = {
+                    contactOrEmail : otpData!.contactOrEmail,
+                    authType: otpData!.authType,
+                    role: otpData!.role,
+                    userId: otpData!.userId,
+                    providerId: providerResponse.providerId
+                }
+                setOtpData(refactorOtpData);
                 router.push("/provider/dashboard");
             }
         }); 

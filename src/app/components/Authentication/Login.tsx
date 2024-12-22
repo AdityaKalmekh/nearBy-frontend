@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 interface responseData {
     role: number;
     userId: string;
+    providerId :string;
 }
 
 type FormInputs = {
@@ -99,7 +100,8 @@ export default function Login() {
                     contactOrEmail: data.contactInfo,
                     authType: requestData.authType,
                     role: user?.role,
-                    userId: user.userId
+                    userId: user.userId,
+                    providerId: user.providerId
                 })
                 router.push('/OtpVerification')
             });

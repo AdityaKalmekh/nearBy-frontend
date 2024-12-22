@@ -1,12 +1,13 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 
-interface OtpState {
+export interface OtpState {
     otpData: {
         contactOrEmail: string,
         authType: string,
         role: number,
-        userId: string
+        userId: string,
+        providerId ? : string 
     } | null;
     setOtpData: (data: OtpState['otpData']) => void;
     clearOtpData: () => void;
