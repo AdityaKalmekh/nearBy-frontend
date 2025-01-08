@@ -22,30 +22,33 @@ export const useProviderSocket = (providerId: string | undefined) => {
 
         const socket = initializeSocket(providerId);
 
-        socket.on('connect', () => {
-            console.log('Socket connected:', socket.id);
-            socket.emit('auth:provider', providerId);
-        });
+        if (socket){
 
-        socket.on('new:request', (data: RequestDisplay) => {
-            setActiveRequest(data);
-            setTimer(20);
-            startTimer();
-        });
-
-        socket.on('request:accepted', (data: RequestDisplay) =>{
-            setActiveRequest((prevData) => ({...prevData, ...data}));
-            setAccepted(true);
-        })
-
-        return () => {
-            socket.off('connect');
-            socket.off('new:request');
-            socket.off('request:accepted');
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
-        };
+            socket.on('connect', () => {
+                console.log('Socket connected:', socket.id);
+                socket.emit('auth:provider', providerId);
+            });
+    
+            socket.on('new:request', (data: RequestDisplay) => {
+                setActiveRequest(data);
+                setTimer(20);
+                startTimer();
+            });
+    
+            socket.on('request:accepted', (data: RequestDisplay) =>{
+                setActiveRequest((prevData) => ({...prevData, ...data}));
+                setAccepted(true);
+            })
+    
+            return () => {
+                socket.off('connect');
+                socket.off('new:request');
+                socket.off('request:accepted');
+                if (timerRef.current) {
+                    clearInterval(timerRef.current);
+                }
+            };
+        }
     }, [providerId]);
     
     const startTimer = () => {

@@ -18,24 +18,26 @@ export const useRequesterSocket = (
 
         const socket = initializeSocket(requesterId);
 
-        socket.on('connect', () => {
-            socket.emit('auth:user', requesterId);
-        })
+        if (socket){
 
-        socket.on('request:update', (data: requestResponse) => {
-            const { status, providerId } = data;
-                       
-            if (status === 'ACCEPTED') {
-                router.push(`${providerId}`);
-            } else if (status === 'NO_PROVIDER') {
-                setError('No providers available in your region');
-            }
-        })
-
-        return () => {
-            socket.off('connect');
-            socket.off('new:request');
-        };
-
+            socket.on('connect', () => {
+                socket.emit('auth:user', requesterId);
+            })
+    
+            socket.on('request:update', (data: requestResponse) => {
+                const { status, providerId } = data;
+                           
+                if (status === 'ACCEPTED') {
+                    router.push(`${providerId}`);
+                } else if (status === 'NO_PROVIDER') {
+                    setError('No providers available in your region');
+                }
+            })
+    
+            return () => {
+                socket.off('connect');
+                socket.off('new:request');
+            };
+        }
     }, [requesterId, router, setError]);
 }
