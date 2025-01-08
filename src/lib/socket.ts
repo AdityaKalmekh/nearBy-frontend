@@ -13,10 +13,11 @@ export const initializeSocket = (userId: string) => {
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 1000,
-            transports: ['polling', 'websocket'],
+            transports: ['websocket', 'polling'],
             secure: true,
             withCredentials: true,
-            path: '/socket.io/'
+            path: '/socket.io/',
+            timeout: 10000
         });
     }
     return socket;
