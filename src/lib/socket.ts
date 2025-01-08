@@ -17,9 +17,9 @@ export const initializeSocket = (userId: string) => {
             auth: {
                 userId
             },
-            transports: ['websocket'] as ('websocket' | 'polling')[], // Try websocket only first
+            transports: ['polling', 'websocket'], // Try websocket only first
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 10,
             reconnectionDelay: 1000,
             autoConnect: false, // Prevent automatic connection
             secure: true,
@@ -28,27 +28,14 @@ export const initializeSocket = (userId: string) => {
             timeout: 10000
         });
 
-
-        // Connection handling
         socket.on('connect', () => {
-            console.log('Socket connected successfully:', socket?.id);
-            if (socket?.io?.engine?.transport) {
-                console.log('Transport type:', socket.io.engine.transport.name);
-            }
+            console.log('Connected with transport:', socket?.io?.engine?.transport?.name);
         });
 
         socket.on('connect_error', (error) => {
             console.error('Connection error:', error);
-            // If websocket fails, fall back to polling
-            if (socket?.io?.opts?.transports?.[0] === 'websocket') {
-                console.log('Falling back to polling transport');
-                if (socket.io.opts) {
-                    socket.io.opts.transports = ['polling', 'websocket'];
-                }
-                socket.connect();
-            }
         });
-
+    
         socket.connect();
     }
     return socket;
