@@ -213,7 +213,7 @@ export const useLocation = (): UseLocationResult => {
         setLocationStatus(newStatus);
         setLocationError(newError);
     };
-
+    
     // Try each location method in sequence 
     const tryLocationMethod = async <T extends LocationData>(
         method: LocationMethod<T>,
@@ -277,7 +277,7 @@ export const useLocation = (): UseLocationResult => {
             throw new Error(errorMessage);
         }
     };
-
+    
     return {
         location,
         locationStatus,

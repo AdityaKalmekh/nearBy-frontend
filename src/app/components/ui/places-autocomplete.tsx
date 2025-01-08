@@ -1,17 +1,17 @@
 import { useClickOutside } from "@/app/hooks/useClickOutside";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Search } from "lucide-react";
+import { AlertCircle, MapPin, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import usePlacesAutocomplete, {
     getGeocode,
     getLatLng,
 } from 'use-places-autocomplete';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useLocation } from "@/app/hooks/useLocation";
 
 interface Location {
     lat: number,
     lng: number,
-    address: string
 }
 
 export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Location) => void }) => {
@@ -35,6 +35,20 @@ export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Lo
     const [error, setError] = useState<string | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const suggestionRefs = useRef<(HTMLLIElement | null)[]>([]);
+    const {
+        getLocation
+    } = useLocation();
+
+    const handleYourLocation = async() => {
+        const currenLocation = await getLocation();
+        console.log(currenLocation);
+        
+        const formateLocation = {
+            lat: currenLocation.coordinates[1],
+            lng: currenLocation.coordinates[0]
+        }
+        setLocation(formateLocation);
+    }
 
     const handleSelect = async (address: string) => {
         setValue(address, false);
@@ -46,7 +60,7 @@ export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Lo
         try {
             const results = await getGeocode({ address });
             const { lat, lng } = await getLatLng(results[0]);
-            setLocation({ address, lat, lng });
+            setLocation({ lat, lng });
         } catch (error) {
             // console.error('Error: ', error);
             setError('Failed to get location coordinates. Please try again.');
@@ -129,51 +143,69 @@ export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Lo
             />
 
             {/* Custom Suggestions Dropdown */}
-            {status === "OK" && showSuggestions && (
-                <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border overflow-hidden">
-                    <ul
-                        // className="divide-y divide-gray-100"
-                        id="suggestions-list"
-                        className="max-h-60 overflow-auto divide-y divide-gray-100"
-                        role="listbox"
+            <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border overflow-hidden">
+                <ul
+                    id="suggestions-list"
+                    className="max-h-60 overflow-auto divide-y divide-gray-100"
+                    role="listbox"
+                >
+                    {/* Your location option */}
+                    {showSuggestions && status !== "OK" && (
+                        <li
+                        ref={(el: HTMLLIElement | null) => {
+                            suggestionRefs.current[0] = el
+                        }}
+                        id="suggestion-0"
+                        role="option"
+                        aria-selected={selectedIndex === 0}
+                        className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
+                            }`}
+                        onClick={handleYourLocation}
                     >
+                        <div className="flex items-center">
+                            <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                            <span className="text-sm font-semibold text-black">
+                                Your location
+                            </span>
+                        </div>
+                    </li>
+                    )}
 
-                        {data.map(({ place_id, description, structured_formatting }, index) => {
-
-                            const { mainText, secondaryText } = structured_formatting
-                                ? {
-                                    mainText: structured_formatting.main_text,
-                                    secondaryText: structured_formatting.secondary_text
-                                }
-                                : formatSuggestion(description);
-                            return (
-                                <li
-                                    // ref={el => suggestionRefs.current[index] = el}
-                                    ref={(el: HTMLLIElement | null) => {
-                                        suggestionRefs.current[index] = el;
-                                    }}  
-                                    key={place_id}
-                                    id={`suggestion-${index}`}
-                                    role="option"
-                                    aria-selected={selectedIndex === index}
-                                    className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'
-                                        }`}
-                                    onClick={() => handleSelect(structured_formatting.main_text + ', ' + structured_formatting.secondary_text)}
-                                >
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-semibold text-gray-900">
-                                            {mainText}
-                                        </span>
-                                        <span className="text-sm text-gray-500 mt-0.5">
-                                            {secondaryText}
-                                        </span>
-                                    </div>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </div>
-            )}
+                    {/* Google Places suggestions */}
+                    {status === "OK" && data.map(({ place_id, description, structured_formatting }, index) => {
+                        const { mainText, secondaryText } = structured_formatting
+                            ? {
+                                mainText: structured_formatting.main_text,
+                                secondaryText: structured_formatting.secondary_text
+                            }
+                            : formatSuggestion(description);
+                        return (
+                            <li
+                                // ref={el => suggestionRefs.current[index] = el}
+                                ref={(el: HTMLLIElement | null) => {
+                                    suggestionRefs.current[index] = el;
+                                }}
+                                key={place_id}
+                                id={`suggestion-${index}`}
+                                role="option"
+                                aria-selected={selectedIndex === index}
+                                className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                    }`}
+                                onClick={() => handleSelect(structured_formatting.main_text + ', ' + structured_formatting.secondary_text)}
+                            >
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {mainText}
+                                    </span>
+                                    <span className="text-sm text-gray-500 mt-0.5">
+                                        {secondaryText}
+                                    </span>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
 
             {error && (
                 <Alert variant="destructive" className="mt-2">

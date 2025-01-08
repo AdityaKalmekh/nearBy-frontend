@@ -1,224 +1,242 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, ClipboardList, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
 import { useOtpStore } from "@/app/store/otpStore";
-import { useLocation, LocationData, LocationStatus } from "@/app/hooks/useLocation";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useInterval } from "@/app/hooks/useInterval";
-
-interface TrackingApiResponse {
-    success: boolean;
-    message?: string;
-}
-
-const LOCATION_UPDATE_INTERVAL = 60000;
+import { Button } from "@/components/ui/button";
+import { useProviderSocket } from "@/app/hooks/useProviderSocket";
+import { useLocationTracking } from "@/app/hooks/useLocationTracking";
+import { useState } from 'react';
+import ProviderNavbar from '@/app/components/navbar/ProviderNavbar';
 
 const Page = () => {
-
-    const [isTracking, setIsTracking] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [updateInterval, setUpdateInterval] = useState<NodeJS.Timeout | null>(null);
     const otpData = useOtpStore(state => state.otpData);
+    const providerId = otpData?.providerId;
 
+    const [activeTab, setActiveTab] = useState('requests');
+    const { accepted, activeRequest, timer, handleAccept, handleReject } = useProviderSocket(providerId);
     const {
-        location,
-        locationStatus,
-        locationError,
-        getLocation,
-    } = useLocation();
+        isTracking,
+        handleStatusChange
+    } = useLocationTracking(providerId);
 
-    const startTracking = async (locationData: LocationData): Promise<boolean> => {
-        const providerId = otpData?.providerId;
+    const menuItems = [
+        { icon: ClipboardList, label: 'Requests', id: 'requests' },
+        { icon: Settings, label: 'Services', id: 'services' },
+    ];
 
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/start/${providerId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    longitude: locationData.coordinates[0],
-                    latitude: locationData.coordinates[1],
-                    accuracy: locationData.accuracy,
-                    source: locationData.source
-                }),
-            });
+    const [currentPage, setCurrentPage] = useState(1);
 
-            const data: TrackingApiResponse = await response.json();
+    const dummyData = Array(15).fill(0).map((_, index) => ({
+        id: index + 1,
+        date: 'Dec 29, 2024 14:30',
+        name: 'John Doe',
+        distance: '5.0 km',
+        status: 'Pending'
+    }));
 
-            if (!data.success) throw new Error(data.message || 'Failed to start tracking');
-            return true;
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to start tracking');
-            return false;
-        }
-    };
-
-    const stopTracking = useCallback(async (): Promise<void> => {
-        if (!isTracking) return;
-
-        try {
-            const providerId = otpData?.providerId;
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/stop/${providerId}`, {
-                method: 'POST',
-            });
-
-            const data: TrackingApiResponse = await response.json();
-
-            if (!data.success) throw new Error(data.message);
-
-            if (updateInterval) {
-                clearInterval(updateInterval);
-                setUpdateInterval(null);
-            }
-
-            setIsTracking(false);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to stop tracking');
-        }
-    }, [otpData?.providerId, updateInterval, isTracking]);
-
-    const updateLocation = useCallback(async () => {
-        if (!isTracking) return;
-
-        try {
-            const currentLocation = await getLocation();
-            const providerId = otpData?.providerId;
-            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/update/${providerId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    longitude: currentLocation.coordinates[0],
-                    latitude: currentLocation.coordinates[1],
-                    accuracy: currentLocation.accuracy,
-                    source: currentLocation.source
-                }),
-            });
-
-            const data: TrackingApiResponse = await response.json();
-
-            if (!data.success) throw new Error(data.message);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to update location');
-            await stopTracking();
-        }
-    }, [otpData?.providerId, getLocation, stopTracking, isTracking]);
-
-
-    const handleStatusChange = async (checked: boolean) => {
-        setError(null);
-
-        if (checked) {
-            try {
-                const currentLocation = await getLocation();
-                const success = await startTracking(currentLocation);
-
-                if (success) {
-                    setIsTracking(true);
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to start tracking');
-                setIsTracking(false);
-            }
-        } else {
-            stopTracking();
-        }
-    };
-
-    useEffect(() => {
-        return () => {
-            if (updateInterval) {
-                clearInterval(updateInterval);
-            }
-        };
-    }, [updateInterval]);
-
-    useInterval(
-        async () => {
-            if (isTracking) {
-                await updateLocation();
-            }
-        },
-        isTracking ? LOCATION_UPDATE_INTERVAL : null
-    );
-
-    const getStatusBadgeVariant = (status: LocationStatus) => {
-        switch (status) {
-            case LocationStatus.SUCCESS:
-                return 'secondary';
-            case LocationStatus.ERROR:
-            case LocationStatus.DENIED:
-                return 'destructive';
-            case LocationStatus.LOADING:
-                return 'secondary';
-            default:
-                return 'outline';
-        }
-    };
+    const itemsPerPage = activeRequest ? 3 : 5;
+    const totalPages = Math.ceil(dummyData.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const currentData = dummyData.slice(startIndex, startIndex + itemsPerPage);
 
     return (
 
-        <Card className="w-full max-w-2xl">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <CardTitle className="text-2xl font-bold">Location Tracking</CardTitle>
-                <div className="flex items-center space-x-2">
-                    <span className={`text-sm ${isTracking ? 'text-green-600' : 'text-gray-500'}`}>
-                        {isTracking ? 'Tracking Active' : 'Tracking Inactive'}
-                    </span>
-                    <Switch
-                        checked={isTracking}
-                        onCheckedChange={handleStatusChange}
-                        disabled={locationStatus === LocationStatus.LOADING}
-                        className="data-[state=checked]:bg-green-500"
-                    />
+        <div className="min-h-screen flex flex-col">
+            <ProviderNavbar
+                isTracking={isTracking}
+                handleStatusChange={handleStatusChange}
+            />
+            {/* Main Content */}
+            <div className="flex flex-col lg:flex-row flex-1">
+                {/* Left Menu */}
+                <div className="w-full lg:w-64 bg-gray-50 lg:overflow-visible">
+                    <nav className="flex lg:flex-col overflow-x-auto lg:overflow-x-hidden">
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.id}
+                                onClick={() => setActiveTab(item.id)}
+                                className={`w-full flex items-center space-x-3 px-4 py-3 text-left transition-colors ${activeTab === item.id
+                                    ? 'bg-gray-200'
+                                    : 'hover:bg-gray-100'
+                                    }`}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                <span>{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
                 </div>
-            </CardHeader>
 
-            <CardContent className="space-y-4">
-                {(error || locationError) && (
-                    <Alert variant="destructive">
-                        <AlertDescription>{error || locationError}</AlertDescription>
-                    </Alert>
-                )}
-
-                <div className="space-y-2">
-                    <Badge variant={getStatusBadgeVariant(locationStatus)}>
-                        {locationStatus === LocationStatus.LOADING && (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        Status: {locationStatus}
-                    </Badge>
-
-                    {location && (
-                        <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                <MapPin className="h-4 w-4" />
-                                <span className="text-sm">
-                                    Long: {location.coordinates[0].toFixed(6)},
-                                    Lat: {location.coordinates[1].toFixed(6)}
-                                </span>
-                            </div>
-                            <div className="flex space-x-2">
-                                <Badge variant="outline">
-                                    Source: {location.source}
-                                </Badge>
-                                {location.accuracy && (
-                                    <Badge variant="outline">
-                                        Accuracy: ±{Math.round(location.accuracy)}m
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
+                {/* Right Content */}
+                <div className="flex-1 p-3">
+                    {/* New Request Notification */}
+                    {activeRequest && (
+                        <Card className="mb-3">
+                            <CardContent className="p-2">
+                                <div className="flex flex-col space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-xl font-semibold">New Request</h2>
+                                        {/* <Badge variant="secondary" className="text-sm"> */}
+                                        {/* {timer}s remaining */}
+                                        {!accepted && (
+                                            <Badge
+                                                variant="secondary"
+                                                className={timer <= 3 ? 'bg-red-100 text-red-800' : ''}
+                                            >
+                                                {timer}s remaining
+                                            </Badge>
+                                        )}
+                                        {/* </Badge> */}
+                                    </div>
+                                    {accepted && (
+                                        <div className="flex items-center space-x-3">
+                                            <User className="h-5 w-5 text-gray-500" />
+                                            <div>
+                                                <span className="text-sm font-medium">
+                                                    {activeRequest?.firstName} {activeRequest?.lastName}
+                                                </span>
+                                                <div className="mt-1">
+                                                    <Badge variant="outline" className="text-xs">
+                                                        <Phone className="h-3 w-3 mr-1" />
+                                                        {activeRequest?.phoneNo}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>)}
+                                    <div className="flex items-center text-gray-600">
+                                        <MapPin className="h-5 w-5 mr-2" />
+                                        <span>{(parseInt(activeRequest.distance) / 1000).toFixed(1)} km from your location</span>
+                                    </div>
+                                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
+                                        {accepted ? (
+                                            <>
+                                                <Button
+                                                    className="w-full sm:flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+                                                >
+                                                    <Phone className="mr-2 h-4 w-4" />
+                                                    Call User
+                                                </Button>
+                                                <Button
+                                                    className="w-full sm:flex-1"
+                                                    variant="outline"
+                                                >
+                                                    <MapPin className="mr-2 h-4 w-4" />
+                                                    View Location
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Button
+                                                    className="w-full sm:flex-1 bg-green-600 hover:bg-green-700"
+                                                    onClick={handleAccept}
+                                                    disabled={timer === 0}
+                                                >
+                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                    Accept Request
+                                                </Button>
+                                                <Button
+                                                    className="w-full sm:flex-1 bg-red-500 hover:bg-red-600"
+                                                    onClick={handleReject}
+                                                    disabled={timer === 0}
+                                                >
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    Reject Request
+                                                </Button>
+                                            </>
+                                            // </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     )}
+
+                    {/* Requests Table */}
+                    <Card>
+                        <CardContent className="p-3">
+                            <h2 className="text-xl font-semibold mb-3">Requests</h2>
+                            <div className='overflow-x-auto lg:overflow-visible'>
+                                <table className="w-full mb-auto lg:w-full min-w-[800px] lg:min-w-0">
+                                    <thead>
+                                        <tr className="text-left text-gray-500">
+                                            <th className="px-8 pb-2">Request Date</th>
+                                            <th className="px-8 pb-2">Requester Name</th>
+                                            <th className="px-8 pb-2">Distance</th>
+                                            <th className="px-8 pb-2">Status</th>
+                                            <th className="px-8 pb-2">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {currentData.map((item) => (
+                                            <tr key={item.id}>
+                                                <td className="px-8 py-2">{item.date}</td>
+                                                <td className="px-8 py-2 text-blue-600">{item.name}</td>
+                                                <td className="px-8 py-2">{item.distance}</td>
+                                                <td className="px-8 py-2">
+                                                    <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                                                        {item.status}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex space-x-2">
+                                                        <Button size="sm" className="bg-green-500 hover:bg-green-600 rounded-lg">
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button size="sm" className="bg-red-500 hover:bg-red-600 rounded-lg">
+                                                            <XCircle className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Pagination */}
+                            {!accepted && (
+                                <div className="flex flex-col sm:flex-row justify-between items-center mt-3 space-y-3 sm:space-y-0 overflow-x-auto lg:overflow-visible">
+                                    <span className="text-sm text-gray-500 text-center sm:text-left">
+                                        Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, dummyData.length)} of {dummyData.length} entries
+                                    </span>
+                                    <div className="flex space-x-2 overflow-x-auto">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                        >
+                                            Previous
+                                        </Button>
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                            <Button
+                                                key={page}
+                                                variant="outline"
+                                                size="sm"
+                                                className={currentPage === page ? 'bg-blue-50' : ''}
+                                                onClick={() => setCurrentPage(page)}
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div >
     )
 }
 export default Page

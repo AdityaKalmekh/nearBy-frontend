@@ -1,0 +1,1 @@
+export const LOCATION_UPDATE_INTERVAL = 60000;

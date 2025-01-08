@@ -14,6 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlacesAutocomplete } from '@/app/components/ui/places-autocomplete';
+import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOtpStore } from '@/app/store/otpStore';
+import { useRequesterSocket } from '@/app/hooks/useRequesterSocket';
 
 type Service = string;
 
@@ -29,20 +33,26 @@ const INITIAL_SERVICES: Service[] = [
 const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 interface Location {
     lat: number,
-    lng: number,
-    address: string
+    lng: number
 }
 
 const Page = () => {
+    const otpData = useOtpStore(state => state.otpData);
+    const requesterId = otpData?.userId;
+
     const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [location, setLocation] = useState<Location | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    useRequesterSocket(requesterId, setError);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: ['places'],
     });
-
+    
     const mapCenter = useMemo(() =>
         location ? { lat: location.lat, lng: location.lng } : { lat: 20, lng: 0 },
         [location]
@@ -67,6 +77,42 @@ const Page = () => {
     if (!isLoaded) {
         return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     }
+
+    const handleSubmit = async () => {
+        setIsLoading(true);
+        setError(null);
+
+        const requestData = {
+            longitude : location?.lng,
+            latitude : location?.lat,
+            userId: requesterId,
+            services: selectedServices,   
+        }
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/request/provider`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+            });
+
+            const data = await response.json();
+            
+            if (data) {
+                setIsLoading(true);
+            } else {
+                setError('No providers available in your region at this moment.');
+            }
+        } catch (err) {
+            console.log(err);
+            setError('Failed to submit request. Please try again.');
+        } 
+        // finally {
+        //     setIsLoading(false);
+        // }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
@@ -132,12 +178,26 @@ const Page = () => {
                         ))}
                     </div>
 
+                    {error && (
+                        <Alert variant="destructive">
+                            <AlertDescription>{error}</AlertDescription>
+                        </Alert>
+                    )}
+
                     {/* Submit Button */}
                     <Button
                         className="w-full"
-                        disabled={selectedServices.length === 0}
+                        disabled={selectedServices.length === 0 || isLoading || !location}
+                        onClick={handleSubmit}
                     >
-                        Submit Request
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Finding Provider...
+                            </>
+                        ) : (
+                            'Submit Request'
+                        )}
                     </Button>
                 </CardContent>
             </Card>
