@@ -22,14 +22,15 @@ export const initializeSocket = (userId: string) => {
             reconnection: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 2000,
-            reconnectionDelayMax: 5000,
             autoConnect: false, // Prevent automatic connection
             secure: true,
             withCredentials: true,
             path: '/socket.io/',
-            timeout: 10000,
+            timeout: 20000,
             forceNew: true,
-            rejectUnauthorized: false
+            extraHeaders: {
+                "User-Agent": "Socket-Client"
+            }
         });
 
         socket.on('connect', () => {
