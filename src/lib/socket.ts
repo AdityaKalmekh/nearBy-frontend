@@ -18,15 +18,15 @@ export const initializeSocket = (userId: string) => {
             auth: {
                 userId
             },
-            transports: ['polling', 'websocket'], // Try websocket only first
+            transports: ['polling'], // Try websocket only first
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: 5,
             reconnectionDelay: 1000,
             autoConnect: false, // Prevent automatic connection
             secure: true,
             withCredentials: true,
             path: '/socket.io/',
-            timeout: 20000,
+            timeout: 10000,
         });
 
         socket.on('connect', () => {
