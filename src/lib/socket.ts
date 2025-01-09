@@ -7,7 +7,6 @@ let socket: Socket<DefaultEventsMap, DefaultEventsMap> | null = null;
 export const initializeSocket = (userId: string) => {
     if (!socket) {
         const socketURL = process.env.NEXT_PUBLIC_SOCKET_URL;
-        console.log("socket ----------------", socketURL);
         
         if (!socketURL) {
             console.error('Socket URL not configured');
@@ -15,12 +14,16 @@ export const initializeSocket = (userId: string) => {
         }
 
         socket = io(socketURL, {
-            transports: ['polling'], // Try websocket only first
-            autoConnect: false, // Prevent automatic connection
-            path: '/socket.io/',
             auth: {
                 userId
-            }       
+            },       
+            transports: ['polling', 'websocket'], // Try websocket only first
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
+            autoConnect: false, // Prevent automatic connection
+            path: '/socket.io/',
+            timeout: 20000
         });
 
         socket.on('connect', () => {
