@@ -20,13 +20,16 @@ export const initializeSocket = (userId: string) => {
             },
             transports: ['polling'], // Try websocket only first
             reconnection: true,
-            reconnectionAttempts: 3,
-            reconnectionDelay: 1000,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 2000,
+            reconnectionDelayMax: 5000,
             autoConnect: false, // Prevent automatic connection
             secure: true,
             withCredentials: true,
             path: '/socket.io/',
             timeout: 10000,
+            forceNew: true,
+            rejectUnauthorized: false
         });
 
         socket.on('connect', () => {
