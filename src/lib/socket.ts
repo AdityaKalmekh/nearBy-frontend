@@ -15,20 +15,12 @@ export const initializeSocket = (userId: string) => {
         }
 
         socket = io(socketURL, {
+            transports: ['polling'], // Try websocket only first
+            autoConnect: false, // Prevent automatic connection
+            path: '/socket.io/',
             auth: {
                 userId
-            },
-            transports: ['polling'], // Try websocket only first
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 2000,
-            reconnectionDelayMax: 5000,
-            autoConnect: false, // Prevent automatic connection
-            secure: true,
-            withCredentials: true,
-            path: '/socket.io/',
-            timeout: 20000,
-            forceNew: true,
+            }       
         });
 
         socket.on('connect', () => {
@@ -41,7 +33,10 @@ export const initializeSocket = (userId: string) => {
 
         socket.on('connect_error', (error) => {
             console.log("In socket error");
-            console.error('Connection error:', error);
+            console.error('Connection error details:', {
+                message: error.message,
+                state: socket?.connected
+            });
         });
     
         socket.connect();
