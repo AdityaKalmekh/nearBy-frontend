@@ -20,7 +20,7 @@ export const initializeSocket = (userId: string) => {
             },
             transports: ['polling'], // Try websocket only first
             reconnection: true,
-            reconnectionAttempts: 5,
+            reconnectionAttempts: 3,
             reconnectionDelay: 1000,
             autoConnect: false, // Prevent automatic connection
             secure: true,
