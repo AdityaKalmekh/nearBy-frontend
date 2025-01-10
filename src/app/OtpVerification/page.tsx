@@ -30,7 +30,7 @@ const Page = () => {
     const initialState: VerificationState = {
         code: ['', '', '', ''],
         timer: 2,
-        phoneNoOrEmail: otpData?.contactOrEmail ? `0${otpData.contactOrEmail}` : ''
+        phoneNoOrEmail: otpData?.contactOrEmail ? `${otpData.contactOrEmail}` : ''
     };
     const [state, setState] = useState<VerificationState>(initialState);
 

@@ -26,16 +26,7 @@ export const initializeSocket = (userId: string) => {
             timeout: 20000
         });
 
-        socket.on('connect', () => {
-            // console.log('Connected with transport:', socket?.io?.engine?.transport?.name);
-            console.log('Connected:', {
-                id: socket?.id,
-                transport: socket?.io?.engine?.transport?.name
-            });
-        });
-
         socket.on('connect_error', (error) => {
-            console.log("In socket error");
             console.error('Connection error details:', {
                 message: error.message,
                 state: socket?.connected
