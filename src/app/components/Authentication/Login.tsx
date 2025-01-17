@@ -1,22 +1,15 @@
 "use client"
 
-import useHttp from "../../hooks/use-http";
 import { useRouter, usePathname } from "next/navigation";
-import { useOtpStore } from "@/app/store/otpStore";
 import LoginNav from "@/app/components/navbar/LoginNavbar";
 import { useForm } from 'react-hook-form';
-interface responseData {
-    role: number;
-    userId: string;
-    providerId :string;
-}
+import { useAuthContext } from "@/contexts/auth-context";
 
 type FormInputs = {
     contactInfo: string;
 }
 
 type AuthType = 'Email' | 'PhoneNo';
-
 interface AuthRequest {
     role: string,
     email?: string;
@@ -26,10 +19,9 @@ interface AuthRequest {
 
 export default function Login() {
     const router = useRouter();
-    const { error, sendRequest, isLoading } = useHttp<responseData>();
     const pathName = usePathname();
     const role = pathName.split('/')[1];
-    const setOtpData = useOtpStore(state => state.setOtpData);
+    const { initiateAuth, error, isLoading } = useAuthContext();
 
     const {
         register,
@@ -91,20 +83,12 @@ export default function Login() {
                 ? { email: validation.value, authType: 'Email', role: role }
                 : { phoneNo: validation.value, authType: 'PhoneNo', role: role };
 
-            sendRequest({
-                url: "auth/initiate",
-                method: "POST",
-                data: requestData
-            }, (user) => {
-                setOtpData({
-                    contactOrEmail: data.contactInfo,
-                    authType: requestData.authType,
-                    role: user?.role,
-                    userId: user.userId,
-                    providerId: user.providerId
-                })
-                router.push('/OtpVerification')
-            });
+
+            const otpResult = await initiateAuth(requestData);
+
+            if (otpResult) {
+                router.push(`/OtpVerification`);
+            }
         } catch (error) {
             setError('contactInfo', {
                 type: 'manual',

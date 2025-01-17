@@ -4,33 +4,18 @@ import React, { useState, ChangeEvent, KeyboardEvent, useEffect, useRef } from '
 import { VerificationState } from '../types/verification';
 import { useRouter } from "next/navigation";
 import LoginNav from "@/app/components/navbar/LoginNavbar";
-import { useOtpStore } from '../store/otpStore';
-import useHttp from '../hooks/use-http';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-interface UserVerification {
-    success: string,
-    code: number,
-    message: string,
-    user: {
-        id: string,
-        status: string,
-        verifiedEmail: boolean,
-        verifiedPhoneNo: boolean
-    }
-}
+import { useAuthContext } from '@/contexts/auth-context';
 
 const Page = () => {
-    const otpData = useOtpStore(state => state.otpData);
-    const clearOtpData = useOtpStore(state => state.clearOtpData);
-    const { error, sendRequest, isLoading } = useHttp();
+    const { user, verifyOtp, error, isLoading, loading } = useAuthContext();
     const router = useRouter();
     const hasMounted = useRef(false);
     const initialState: VerificationState = {
         code: ['', '', '', ''],
         timer: 2,
-        phoneNoOrEmail: otpData?.contactOrEmail ? `${otpData.contactOrEmail}` : ''
+        phoneNoOrEmail: user?.contactOrEmail || ''
     };
     const [state, setState] = useState<VerificationState>(initialState);
 
@@ -39,14 +24,24 @@ const Page = () => {
             hasMounted.current = true;
             return;
         }
+    }, []);
 
-        if (!otpData?.contactOrEmail) {
-            router.push(`/${otpData?.role}`);
-        }
-        // return () => clearOtpData();
-    }, [clearOtpData, otpData, router]);
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white relative">
+                <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
+                </div>
+            </div>
+        );
+    }
 
-    const handleInputChange = (index: number, value: string): void => {
+    if (!user || !user.contactOrEmail) {
+        router.push(`/${user?.role}`);
+        return null;
+    }
+
+    const handleInputChange = async (index: number, value: string): Promise<void> => {
         if (value.length <= 1 && /^\d*$/.test(value)) {
             const newCode = [...state.code];
             newCode[index] = value;
@@ -61,29 +56,38 @@ const Page = () => {
                 if (nextInput instanceof HTMLInputElement) {
                     nextInput.focus();
                 }
-            } else if (index === 3) {
-                const otp = newCode.join('');
-                const verificationData = { ...otpData, otp };
-                sendRequest({
-                    url: "auth/verify",
-                    method: "POST",
-                    data: verificationData
-                }, (response) => {
-                    const userVerification = response as UserVerification;
-                    if (userVerification?.user?.status) {
-                        const status = userVerification.user.status;
-                        if (status === 'pending') {
-                            router.push("/signup");
-                        }else if (status === 'service_details_pending'){
-                            router.push("/provider/services");
-                        }else if (verificationData.role === 0){
-                            router.push("/provider/dashboard");
-                        }else if (verificationData.role === 1){
-                            router.push("/requester/dashboard");
-                        }
-                    }
-                });
             }
+            if (newCode.every(digit => digit.trim() !== '')) {
+                if (!user) {
+                    router.push('/');
+                    return;
+                }
+                const otp = newCode.join('');
+                const verificationData = {
+                    otp,
+                    userId: user.userId!, // Add non-null assertion if you're sure it exists
+                    authType: user.authType!,
+                    role: user.role!,
+                    contactOrEmail: user.contactOrEmail!,
+                    providerId: user.providerId!
+                };
+                const { status, success, role } = await verifyOtp(verificationData);
+                
+                if (success) {
+                    if (status === 'pending') {
+                        router.push("/signup");
+                    } else if (status === 'service_details_pending') {
+                        router.push('/provider/services');
+                    } else if (role === 0) {
+                        router.push("/provider/dashboard");
+                    } else if (role === 1) {
+                        router.push("/requester/dashboard");
+                    }
+                }
+            }
+            // else{
+            //     console.log("Invalid otp");
+            // }
         }
     };
 
@@ -122,9 +126,9 @@ const Page = () => {
     return (
         <div className="min-h-screen bg-white relative">
             {/* Fullscreen Loader */}
-            {isLoading && (
+            {isLoading || loading && (
                 <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-                    <Loader2 className="h-8 w-8 animate-spin text-black" />
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
                 </div>
             )}
 
@@ -143,13 +147,20 @@ const Page = () => {
             {/* Main Content */}
             <main className="max-w-md mx-auto p-6">
                 <div className="space-y-6">
-                    <h2 className="text-2xl font-semibold text-center">
-                        Welcome back, Aditya.
-                    </h2>
+                    {user.isNewUser ? (<h2 className="text-2xl font-semibold text-center">
+                        {/* Welcome back, {user?.firstName}. */}
+                        Enter the 4-digit code sent to you at {user.contactOrEmail}.
+                    </h2>) : (
+                        <div>
+                            <h2 className='text-2xl font-semibold text-center'>
+                                Welcome back, {user.firstName}.
+                            </h2>
 
-                    <p className="text-center text-gray-700">
-                        Enter the 4-digit code sent to you at {state.phoneNoOrEmail}.
-                    </p>
+                            <p className="text-center text-gray-700 mt-4">
+                                Enter the 4-digit code sent to you at {user.contactOrEmail}.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Verification Code Input */}
                     <div className="flex justify-center gap-2">

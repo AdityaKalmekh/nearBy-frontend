@@ -1,19 +1,19 @@
 "use client";
 
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, ClipboardList, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
+import { CheckCircle, ClipboardList, Loader2, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
 import { Card, CardContent } from '@/components/ui/card';
-import { useOtpStore } from "@/app/store/otpStore";
 import { Button } from "@/components/ui/button";
 import { useProviderSocket } from "@/app/hooks/useProviderSocket";
 import { useLocationTracking } from "@/app/hooks/useLocationTracking";
 import { useState } from 'react';
 import ProviderNavbar from '@/app/components/navbar/ProviderNavbar';
+import { useAuthContext } from '@/contexts/auth-context';
 
 const Page = () => {
-    const otpData = useOtpStore(state => state.otpData);
-    const providerId = otpData?.providerId;
-
+    const { user, loading } = useAuthContext();
+    const providerId = user?.providerId;
+    
     const [activeTab, setActiveTab] = useState('requests');
     const { accepted, activeRequest, timer, handleAccept, handleReject } = useProviderSocket(providerId);
     const {
@@ -28,6 +28,15 @@ const Page = () => {
 
     const [currentPage, setCurrentPage] = useState(1);
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white relative">
+                <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                </div>
+            </div>
+        );
+    }
     const dummyData = Array(15).fill(0).map((_, index) => ({
         id: index + 1,
         date: 'Dec 29, 2024 14:30',

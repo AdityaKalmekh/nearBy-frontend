@@ -4,24 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import LoginNavbar from '../navbar/LoginNavbar';
-import useHttp from '@/app/hooks/use-http';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useOtpStore } from '@/app/store/otpStore';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-
-interface FormData {
+import { useAuthContext } from "@/contexts/auth-context";
+export interface FormData {
     firstName: string;
     lastName: string;
-}
-interface SignUpResponse {
-    success: boolean;
 }
 
 const SignUpForm = () => {
 
-    const { error, sendRequest, isLoading } = useHttp();
-    const userData = useOtpStore(state => state.otpData);
+    const { signUp, isLoading, error } = useAuthContext();
     const router = useRouter();
     const {
         register,
@@ -32,30 +26,24 @@ const SignUpForm = () => {
             firstName: '',
             lastName: ''
         }
-    })
-
+    });
+    
     const onSubmit = async (formData: FormData) => {
-        sendRequest({
-            url: "details",
-            method: "PATCH",
-            data: formData
-        }, (response) => {
-            const userDetail = response as SignUpResponse;
-            if (userDetail.success) {
-                if (userData?.role === 0) {
-                    router.push("/provider/services");
-                } else if (userData?.role === 1) {
-                    router.push("/requester/dashboard");
-                }
+        const { success, data} = await signUp(formData);
+        if (success) {
+            if (data.role === 0) {
+                router.push('/provider/services');
+            }else if (data.role === 1) {
+                router.push('/requester/dashboard');
             }
-        })
+        }
     };
 
     return (
         <div className="min-h-screen bg-white">
             {isLoading && (
                 <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-                    <Loader2 className="h-8 w-8 animate-spin text-black" />
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
                 </div>
             )}
 

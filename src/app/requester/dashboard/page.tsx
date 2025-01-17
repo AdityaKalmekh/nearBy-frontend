@@ -16,8 +16,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlacesAutocomplete } from '@/app/components/ui/places-autocomplete';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useOtpStore } from '@/app/store/otpStore';
 import { useRequesterSocket } from '@/app/hooks/useRequesterSocket';
+import { useAuthContext } from '@/contexts/auth-context';
 
 type Service = string;
 
@@ -37,22 +37,21 @@ interface Location {
 }
 
 const Page = () => {
-    const otpData = useOtpStore(state => state.otpData);
-    const requesterId = otpData?.userId;
+    const { user, loading } = useAuthContext();
 
     const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [location, setLocation] = useState<Location | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
-    useRequesterSocket(requesterId, setError);
+
+    useRequesterSocket(user?.userId, setError);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: ['places'],
     });
-    
+
     const mapCenter = useMemo(() =>
         location ? { lat: location.lat, lng: location.lng } : { lat: 20, lng: 0 },
         [location]
@@ -64,6 +63,16 @@ const Page = () => {
         scrollwheel: true,
     }), []);
 
+    if (loading || !isLoaded) {
+        return (
+            <div className="min-h-screen bg-white relative">
+                <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+                    <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
+                </div>
+            </div>
+        );
+    }
+
     const handleServiceSelect = (service: string) => {
         setSelectedServices(prev => [...prev, service]);
         setAvailableServices(prev => prev.filter(s => s !== service));
@@ -74,19 +83,19 @@ const Page = () => {
         setAvailableServices(prev => [...prev, service].sort());
     };
 
-    if (!isLoaded) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-    }
+    // if (!isLoaded) {
+    //     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    // }
 
     const handleSubmit = async () => {
         setIsLoading(true);
         setError(null);
 
         const requestData = {
-            longitude : location?.lng,
-            latitude : location?.lat,
-            userId: requesterId,
-            services: selectedServices,   
+            longitude: location?.lng,
+            latitude: location?.lat,
+            userId: user?.userId,
+            services: selectedServices,
         }
 
         try {
@@ -99,7 +108,7 @@ const Page = () => {
             });
 
             const data = await response.json();
-            
+
             if (data) {
                 setIsLoading(true);
             } else {
@@ -108,7 +117,7 @@ const Page = () => {
         } catch (err) {
             console.log(err);
             setError('Failed to submit request. Please try again.');
-        } 
+        }
         // finally {
         //     setIsLoading(false);
         // }

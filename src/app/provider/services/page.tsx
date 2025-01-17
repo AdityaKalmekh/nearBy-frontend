@@ -9,43 +9,25 @@ import { Button } from "@/components/ui/button";
 import VisitingChargeModal from "@/app/components/modal/VisitingChargeModal";
 import { useLocation } from "@/app/hooks/useLocation";
 import { LocationStatus } from "@/app/components/Location/LocationStatus";
-import useHttp from "@/app/hooks/use-http";
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRouter } from "next/navigation";
-import { useOtpStore } from "@/app/store/otpStore";
+import { useAuthContext } from "@/contexts/auth-context";
 
 interface ServiceItem {
     icon: LucideIcon,
     serviceType: string,
     visitingCharge?: number;
 }
-
-interface SelectedServiceItem {
-    serviceType: string,
-    visitingCharge: number
-}
-
-// Props interface for ServiceCard component
 interface ServiceCardProps {
     icon: LucideIcon;
     serviceType: string;
     selected: boolean;
     onServiceClick: () => void;
 }
-
-type ProviderResponse = {
-    success : boolean,
-    message : string,
-    providerId : string
-}
-
-interface RefactorOtpData {
-    contactOrEmail: string;  
-    authType: string;       
-    role: number;          
-    userId: string;        
-    providerId: string;   
+export interface SelectedServiceItem {
+    serviceType: string,
+    visitingCharge: number
 }
 
 const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -80,11 +62,9 @@ const Page: React.FC = () => {
     const [selectedServices, setSelectedServices] = useState<SelectedServiceItem[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [currentService, setCurrentService] = useState<string>('');
-    const {error, sendRequest, isLoading} = useHttp();    
-    const setOtpData = useOtpStore(state => state.setOtpData);
-    const otpData = useOtpStore(state => state.otpData);
+    const { error, isLoading, registerProvider } = useAuthContext();
     const router = useRouter();
-
+    
     const {
         getLocation,
         location,
@@ -125,33 +105,17 @@ const Page: React.FC = () => {
 
     const handleContinue = async () => {
         const locationDetails = await getLocation();
-        const requestData = {locationDetails,selectedServices};
-        sendRequest({
-            url: 'provider',
-            method: 'POST',
-            data: requestData
-        },(response) => {
-            const providerResponse = response as ProviderResponse;
-            if(providerResponse?.success){
-                const refactorOtpData : RefactorOtpData = {
-                    contactOrEmail : otpData!.contactOrEmail,
-                    authType: otpData!.authType,
-                    role: otpData!.role,
-                    userId: otpData!.userId,
-                    providerId: providerResponse.providerId
-                }
-                setOtpData(refactorOtpData);
-                router.push("/provider/dashboard");
-            }
-        }); 
-        // console.log(data);
+        const response = await registerProvider(selectedServices, locationDetails);
+        if (response){
+            router.push('/provider/dashboard');
+        }
     }
 
     return (
         <div className="min-h-screen bg-gray-50">
             {isLoading && (
                 <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-                    <Loader2 className="h-8 w-8 animate-spin text-black" />
+                    <Loader2 className="h-10 w-10 animate-spin  text-blue-700" />
                 </div>
             )}
 
