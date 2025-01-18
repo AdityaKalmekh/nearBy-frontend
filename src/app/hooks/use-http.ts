@@ -44,8 +44,10 @@ const useHttp = <T>(): HttpResponse<T> => {
                         !('data' in requestConfig && requestConfig.data instanceof FormData) && {
                         'Content-Type': 'application/json',
                     }),
+                    'Accept': 'application/json',
                     ...requestConfig.headers,
                 },
+                mode: 'cors'
             };
 
             // Add body for non-GET requests
