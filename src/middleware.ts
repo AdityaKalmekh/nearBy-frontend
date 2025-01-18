@@ -12,6 +12,9 @@ const publicPaths = [
 export function middleware(request: NextRequest) {
     const authToken = request.cookies.get('AuthToken');
     const userData = request.cookies.get('User_Data');
+    const auth = request.cookies.get('Auth');
+    console.log("Auth cookies retrival ",auth);
+    
     const { pathname } = request.nextUrl;
 
     // More precise public path checking
@@ -43,7 +46,7 @@ export function middleware(request: NextRequest) {
         const [, payload] = authToken.value.split('.') as [string, string, string];
         const decodedPayload = JSON.parse(atob(payload));
         const userRole = decodedPayload.role;
-        
+
         const user = JSON.parse(userData.value);
         console.log("User_Data2 cookie ", user);
         console.log("AuthToken cookie ", authToken);
