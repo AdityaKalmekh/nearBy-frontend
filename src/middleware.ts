@@ -22,7 +22,6 @@ export function middleware(request: NextRequest) {
             pathname.startsWith(path + '/') || pathname === path
     );
 
-    
     // Check if trying to access dashboard or other protected routes
     const isProtectedRoute = pathname.includes('/dashboard') ||
         pathname.includes('/services') ||
@@ -32,6 +31,8 @@ export function middleware(request: NextRequest) {
 
     // If no auth and trying to access protected route
     if (!authToken || !userData) {
+        console.log("User_Data cookie ",userData);
+        console.log("AuthToken cookie", authToken);
         if (!isProtectedRoute || isPublicPath) {
             return NextResponse.next();
         }
@@ -44,6 +45,9 @@ export function middleware(request: NextRequest) {
         const userRole = decodedPayload.role;
 
         const user = JSON.parse(userData);
+        console.log("User_Data2 cookie ", user);
+        console.log("AuthToken cookie ", authToken);
+        console.log("Decode user role ",userRole);
         
         if (!user) {
             const response = NextResponse.redirect(new URL('/', request.url));
