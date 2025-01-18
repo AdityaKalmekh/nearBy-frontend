@@ -57,6 +57,12 @@ const useHttp = <T>(): HttpResponse<T> => {
 
             // console.log(JSON.stringify(requestConfig.data));
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/${requestConfig.url}`, requestOptions);
+            
+            console.log('Response headers:', {
+                'set-cookie': response.headers.get('set-cookie'),
+                'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
+            });
+    
             const responseData = await response.json();
             
             if (!response.ok) {
