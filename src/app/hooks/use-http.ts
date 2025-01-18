@@ -38,7 +38,7 @@ const useHttp = <T>(): HttpResponse<T> => {
         try {
             const requestOptions: RequestInit = {
                 method: requestConfig.method,
-                credentials: requestConfig.credentials || 'include',
+                credentials: 'include',
                 headers: {
                     ...(!(requestConfig.method === 'GET') &&
                         !('data' in requestConfig && requestConfig.data instanceof FormData) && {
