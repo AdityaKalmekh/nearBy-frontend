@@ -32,7 +32,8 @@ const COOKIE_OPTIONS: Cookies.CookieAttributes = {
 export const cookieAuth = {
     setAuthCookies(authToken:string): void {
         Cookies.set(AUTH_COOKIE, 'true', COOKIE_OPTIONS);
-        Cookies.set("auth_token",authToken,COOKIE_OPTIONS);
+        console.log(authToken);
+        // Cookies.set("auth_token",authToken,COOKIE_OPTIONS);
     },
 
     clearAuthCookies(): void {
