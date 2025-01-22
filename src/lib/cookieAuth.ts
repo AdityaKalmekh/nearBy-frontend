@@ -23,7 +23,7 @@ const TEMP_AUTH_DATA = 't_auth_d';
 
 // Cookie configuration
 const COOKIE_OPTIONS: Cookies.CookieAttributes = {
-    expires : new Date(Date.now() + 1 * 60 * 1000),
+    expires : new Date(Date.now() + 60 * 60 * 1000),
     secure: process.env.NODE_ENV === 'production', // Use secure in production
     sameSite: 'Strict',
     path: '/'
@@ -32,7 +32,7 @@ const COOKIE_OPTIONS: Cookies.CookieAttributes = {
 export const cookieAuth = {
     setAuthCookies(authToken:string): void {
         Cookies.set(AUTH_COOKIE, 'true', COOKIE_OPTIONS);
-        console.log(authToken);
+        console.log("Cookie auth token ",authToken);
         // Cookies.set("auth_token",authToken,COOKIE_OPTIONS);
     },
 
