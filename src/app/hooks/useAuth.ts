@@ -65,7 +65,8 @@ interface UserVerification {
     code?: number;
     message?: string;
     status: string;
-    role: number
+    role: number;
+    authToken?: string;
 }
 
 interface SignUpResponse {
@@ -159,8 +160,8 @@ export const useAuth = (): AuthContextType => {
                 data: verificationOTP
             }, (response) => {
                 const userVerification = response as UserVerification;
-                if (userVerification.success) {
-                    cookieAuth.setAuthCookies();
+                if (userVerification.success && userVerification.authToken) {
+                    cookieAuth.setAuthCookies(userVerification.authToken);
                     setAuthState(prev => ({
                         ...prev,
                         isAuthenticated: true
