@@ -1,24 +1,32 @@
 import Cookies from 'js-cookie';
 import { decryptUserData } from './dataDecrypt';
+import { InitiateUserData } from '@/app/hooks/useAuth';
 
 // Types and Interfaces
 export interface UserData {
     userId: string;
     authType: string;
     role: number;
-    providerId?: string;
+    providerId: string | '';
     contactOrEmail: string;
-    firstName?: string;
+    firstName: string | '';
     lastName?: string;
     verifiedEmail?: boolean;
     verifiedPhone?: boolean;
-    status?: string;
-    isNewUser?: boolean;
+    status: string;
+    isNewUser: boolean;
+    fullName?: string;
+}
+
+export interface UpdateUserData {
+    firstName?: string;
+    lastName?: string;
+    providerId?: string;
 }
 
 // Constants for cookie names
 const AUTH_COOKIE = 'Auth';
-const USER_DATA = 'User_Data';
+const USER_DATA = 'user_data';
 const T_DATA_KEY = 't_data_key_c';
 const INITIATE_D = 'initiate_d_c';
 const AUTH_TOKEN = 'auth_token_cli';
@@ -33,7 +41,7 @@ const AUTH_COOKIE_OPTIONS: Cookies.CookieAttributes = {
     path: '/'
 };
 
-const REFRESH_COOKIE_CONFIG : Cookies.CookieAttributes = {
+const REFRESH_COOKIE_CONFIG: Cookies.CookieAttributes = {
     ...AUTH_COOKIE_OPTIONS,
     expires: new Date(Date.now() + 30 * 24 * 60 * 60)
 }
@@ -52,14 +60,17 @@ export const cookieAuth = {
         Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
     },
 
-    setAuthCookies(authToken: string, refreshToken: string, session_id: string): void {
+    setAuthCookies(authToken: string, refreshToken: string, session_id: string, userDt: UserData): void {
         this.clearInitiateUserData();
+        console.log({ userDt });
+        Cookies.set(AUTH_COOKIE, 'true', REFRESH_COOKIE_CONFIG);
         Cookies.set(AUTH_TOKEN, JSON.stringify(authToken), AUTH_COOKIE_OPTIONS);
         Cookies.set(REFRESH_TOKEN, JSON.stringify(refreshToken), REFRESH_COOKIE_CONFIG);
         Cookies.set(SESSION_ID, JSON.stringify(session_id), {
-            secure: process.env.NODE_ENV === 'production' ,
+            secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict'
-        })
+        });
+        Cookies.set(USER_DATA, JSON.stringify(userDt));
     },
 
     clearAuthCookies(): void {
@@ -68,7 +79,7 @@ export const cookieAuth = {
         Cookies.remove(SESSION_ID);
     },
 
-    clearInitiateUserData() : void {
+    clearInitiateUserData(): void {
         Cookies.remove(T_DATA_KEY);
         Cookies.remove(INITIATE_D);
     },
@@ -82,16 +93,38 @@ export const cookieAuth = {
         return userData ? JSON.parse(userData) : null;
     },
 
-    getInitiateUserData(): UserData | null {
+    getInitiateUserData(): InitiateUserData | null {
         const secretKey = Cookies.get(T_DATA_KEY);
         const initiateUserData = Cookies.get(INITIATE_D);
-        
+
         if (secretKey && initiateUserData) {
             const decryptedData = decryptUserData(JSON.parse(initiateUserData), JSON.parse(secretKey));
             console.log(decryptedData);
             return decryptedData;
         }
         return null;
+    },
+
+    updateUserData(updateUserData: UpdateUserData): void {
+        if (updateUserData.providerId) {
+            const existingData = Cookies.get(USER_DATA);
+            if (existingData){
+                Cookies.set(USER_DATA, JSON.stringify({
+                    ...JSON.parse(existingData),
+                    providerId: updateUserData.providerId
+                }));
+            }
+        }else {
+            const existingData = Cookies.get(USER_DATA);
+            if (existingData){
+                Cookies.set(USER_DATA, JSON.stringify({
+                    ...JSON.parse(existingData),
+                    firstName: updateUserData.firstName,
+                    lastName: updateUserData.lastName,
+                    status: "service_details_pending"
+                }));
+            }
+        }
     },
 
     getSessionId(): string | undefined {

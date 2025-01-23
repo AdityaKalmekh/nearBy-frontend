@@ -18,8 +18,6 @@ const Page = () => {
         phoneNoOrEmail: user?.contactOrEmail || ''
     };
     const [state, setState] = useState<VerificationState>(initialState);
-
-    console.log(user);
     
     useEffect(() => {
         if (!hasMounted.current) {
@@ -61,7 +59,7 @@ const Page = () => {
             }
             if (newCode.every(digit => digit.trim() !== '')) {
                 if (!user) {
-                    router.push('/');
+                router.push('/');
                     return;
                 }
                 const otp = newCode.join('');
@@ -71,7 +69,7 @@ const Page = () => {
                     authType: user.authType!,
                     role: user.role!,
                     contactOrEmail: user.contactOrEmail!,
-                    providerId: user.providerId!
+                    isNewUser: user.isNewUser!
                 };
                 const { status, success, role } = await verifyOtp(verificationData);
                 

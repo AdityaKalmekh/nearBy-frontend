@@ -10,8 +10,13 @@ const publicPaths = [
 ];
 
 export function middleware(request: NextRequest) {
-    const authToken = request.cookies.get('auth_token');
-    const userData = request.cookies.get('User_Data');
+    const authToken = request.cookies.get('auth_token_cli');
+    const refreshToken = request.cookies.get('refresh_token_cli');
+    const userData = request.cookies.get('user_data');
+    console.log(refreshToken);
+    console.log(authToken);
+    console.log(userData);
+    
     // const secretKey = request.cookies.get('t_data_key');
     // const encryptedData = request.cookies.get('initiate_d');
     // console.log("Auth cookies retrival ",auth);
@@ -55,8 +60,8 @@ export function middleware(request: NextRequest) {
 
     // If no auth and trying to access protected route
     if (!authToken || !userData) {
-        // console.log("User_Data cookie ",userData);
-        // console.log("AuthToken cookie", authToken);
+        console.log("User_Data cookie ",userData);
+        console.log("AuthToken cookie", authToken);
         if (!isProtectedRoute || isPublicPath) {
             return NextResponse.next();
         }

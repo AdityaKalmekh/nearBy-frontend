@@ -15,7 +15,7 @@ export interface FormData {
 
 const SignUpForm = () => {
 
-    const { signUp, isLoading, error } = useAuthContext();
+    const { signUp, isLoading, error, user } = useAuthContext();
     const router = useRouter();
     const {
         register,
@@ -27,6 +27,8 @@ const SignUpForm = () => {
             lastName: ''
         }
     });
+    
+    console.log(user);
     
     const onSubmit = async (formData: FormData) => {
         const { success, data} = await signUp(formData);

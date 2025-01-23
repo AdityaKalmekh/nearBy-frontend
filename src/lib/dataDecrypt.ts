@@ -1,19 +1,20 @@
+import { InitiateUserData } from "@/app/hooks/useAuth";
 import CryptoJS from "crypto-js";
 interface EncryptedData {
     data: string;
     iv: string;
 } 
 
-interface UserData {
-    userId: string,
-    firstName?: string,
-    authType: string,
-    role: number,
-    isNewUser: boolean,
-    contactOrEmail: string
-}
+// interface InitiateUserData {
+//     userId: string;
+//     firstName: string | '';
+//     authType: string;
+//     role: number;
+//     isNewUser: boolean;
+//     contactOrEmail: string;
+// }
 
-export const decryptUserData = (encryptedData: EncryptedData, secretKey: string): UserData => {
+export const decryptUserData = (encryptedData: EncryptedData, secretKey: string): InitiateUserData => {
     try {
         // Decrypt the data
         const decrypted = CryptoJS.AES.decrypt(

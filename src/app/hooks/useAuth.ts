@@ -17,6 +17,7 @@ export interface InitiateUserData {
     role: number;
     isNewUser: boolean;
     contactOrEmail: string;
+    providerId?: string;
 }
 
 interface InitiateRequest {
@@ -49,8 +50,8 @@ export interface AuthContextType {
     logout: () => void;
     checkAuthStatus: () => void;
     initiateAuth: (requestData: AuthRequest) => Promise<boolean>;
-    user: UserData | null;
-    verifyOtp: (verificationOTP: OtpData) => Promise<UserVerification>;
+    user: UserData | null | InitiateUserData;
+    verifyOtp: (verificationOTP: OtpData) => Promise<UserVerificationReturn>;
     loading: boolean;
     signUp: (formData: FormData) => Promise<signUpResult>;
     registerProvider: (selectedServices: SelectedServiceItem[], locationDetails: LocationData) => Promise<boolean>;
@@ -66,19 +67,24 @@ interface AuthRequest {
 }
 
 interface AuthState {
-    user: UserData | null;
+    user: UserData | null | InitiateUserData;
     isAuthenticated: boolean;
 }
 
-interface UserVerification {
+interface UserVerificationReturn {
     success: boolean;
-    code?: number;
-    message?: string;
     status: string;
     role: number;
-    authToken?: string;
-    refreshToken?: string;
-    session_id?: string;
+}
+
+interface UserVerificationResponse {
+    success: boolean;
+    code: number;
+    message: string;
+    authToken: string;
+    refreshToken: string;
+    session_id: string;
+    user: UserData;
 }
 
 interface SignUpResponse {
@@ -140,7 +146,6 @@ export const useAuth = (): AuthContextType => {
                 (response) => {
                     const initiateRequest = response as InitiateRequest;
                     if (initiateRequest.success) {
-                        console.log(initiateRequest.encryptedData);
                         cookieAuth.setInitialCookies(initiateRequest.secretKey, initiateRequest.encryptedData);
                         setAuthState(prev => ({
                             ...prev,
@@ -149,7 +154,7 @@ export const useAuth = (): AuthContextType => {
                                 authType: initiateRequest.user.authType,
                                 role: initiateRequest.user.role,
                                 contactOrEmail: requestData.email || requestData.phoneNo || '',
-                                firstName: initiateRequest.user.firstName,
+                                firstName: initiateRequest.user.firstName || '',
                                 isNewUser: initiateRequest.user.isNewUser
                             }
                         }));
@@ -161,26 +166,27 @@ export const useAuth = (): AuthContextType => {
         });
     };
 
-    const verifyOtp = async (verificationOTP: OtpData): Promise<UserVerification> => {
+    const verifyOtp = async (verificationOTP: OtpData): Promise<UserVerificationReturn> => {
         return new Promise((resolve) => {
             sendRequest({
                 url: "auth/verify",
                 method: "POST",
                 data: verificationOTP
             }, (response) => {
-                const userVerification = response as UserVerification;
-                if (userVerification.success && userVerification.authToken && userVerification.refreshToken && userVerification.session_id) {
+                const userVerification = response as UserVerificationResponse;
+                if (userVerification.success) {
                     cookieAuth.setAuthCookies(userVerification.authToken,
-                                userVerification.refreshToken,
-                                userVerification.session_id);
+                        userVerification.refreshToken,
+                        userVerification.session_id, userVerification.user);
+
                     setAuthState(prev => ({
                         ...prev,
                         isAuthenticated: true
                     }));
                     resolve({
                         success: true,
-                        status: userVerification.status,
-                        role: userVerification.role
+                        status: userVerification.user.status,
+                        role: userVerification.user.role
                     });
                 }
             });
@@ -196,11 +202,14 @@ export const useAuth = (): AuthContextType => {
             }, (response) => {
                 const signUpResponse = response as SignUpResponse;
                 if (signUpResponse.success) {
+                    cookieAuth.updateUserData({
+                        firstName: signUpResponse.firstName,
+                        lastName: signUpResponse.lastName
+                    });
                     setAuthState((prev) => {
                         if (!prev.user) {
                             return prev;
                         }
-
                         return {
                             ...prev,
                             user: {
