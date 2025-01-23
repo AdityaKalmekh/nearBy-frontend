@@ -19,6 +19,8 @@ const Page = () => {
     };
     const [state, setState] = useState<VerificationState>(initialState);
 
+    console.log(user);
+    
     useEffect(() => {
         if (!hasMounted.current) {
             hasMounted.current = true;

@@ -10,12 +10,22 @@ export interface LoginCredentials {
     password: string;
 }
 
+export interface InitiateUserData {
+    userId : string;
+    firstName: string;
+    authType: string;
+    role: number;
+    isNewUser: boolean;
+    contactOrEmail: string;
+}
+
 interface InitiateRequest {
     success: boolean;
     code: number;
     message: string;
-    user: UserData;
-    isNewUser: boolean;
+    user: InitiateUserData;
+    secretKey: string;
+    encryptedData: string;
 }
 
 interface OtpData {
@@ -128,7 +138,8 @@ export const useAuth = (): AuthContextType => {
                 (response) => {
                     const initiateRequest = response as InitiateRequest;
                     if (initiateRequest.success) {
-                        cookieAuth.setInitialCookies();
+                        console.log(initiateRequest.encryptedData);
+                        cookieAuth.setInitialCookies(initiateRequest.secretKey,initiateRequest.encryptedData);
                         setAuthState(prev => ({
                             ...prev,
                             user: {
@@ -136,12 +147,7 @@ export const useAuth = (): AuthContextType => {
                                 authType: initiateRequest.user.authType,
                                 role: initiateRequest.user.role,
                                 contactOrEmail: requestData.email || requestData.phoneNo || '',
-                                providerId: initiateRequest.user.providerId,
                                 firstName: initiateRequest.user.firstName,
-                                lastName: initiateRequest.user.lastName,
-                                verifiedEmail: initiateRequest.user.verifiedEmail,
-                                verifiedPhone: initiateRequest.user.verifiedPhone,
-                                status: initiateRequest.user.status,
                                 isNewUser: initiateRequest.user.isNewUser
                             }
                         }));

@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie';
+import { decryptUserData } from './dataDecrypt';
 
 // Types and Interfaces
 export interface UserData {
@@ -11,7 +12,7 @@ export interface UserData {
     lastName?: string;
     verifiedEmail?: boolean;
     verifiedPhone?: boolean;
-    status: string;
+    status?: string;
     isNewUser?: boolean;
 }
 
@@ -19,7 +20,6 @@ export interface UserData {
 const AUTH_COOKIE = 'Auth';
 const USER_DATA = 'User_Data';
 const SESSION_ID = 'NEARBY_SID';
-const TEMP_AUTH_DATA = 't_auth_d';
 const T_DATA_KEY = 't_data_key_c';
 const INITIATE_D = 'initiate_d_c';
 
@@ -31,7 +31,7 @@ const INITIATE_D = 'initiate_d_c';
 //     path: '/'
 // };
 
-const INITIAL_COOKIES_OPTIONS : Cookies.CookieAttributes = {
+const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
     expires: new Date(Date.now() + 10 * 60 * 1000),
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'Strict',
@@ -40,18 +40,9 @@ const INITIAL_COOKIES_OPTIONS : Cookies.CookieAttributes = {
 
 export const cookieAuth = {
 
-    setInitialCookies(): void {
-        const secretKey = Cookies.get('t_data_key');
-        const encrpData = Cookies.get('initiate_d');
-
-        console.log("received server side cookies ",secretKey);
-        
-        if (secretKey && encrpData) {
-            Cookies.set(T_DATA_KEY, secretKey, INITIAL_COOKIES_OPTIONS);
-            Cookies.set(INITIATE_D, encrpData, INITIAL_COOKIES_OPTIONS);
-        } else {
-            throw new Error('Secret key or data is not define');
-        }
+    setInitialCookies(secretKey: string, encryptedData: string): void {
+        Cookies.set(T_DATA_KEY, JSON.stringify(secretKey), INITIAL_COOKIES_OPTIONS);
+        Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
     },
 
     clearAuthCookies(): void {
@@ -70,9 +61,15 @@ export const cookieAuth = {
     },
 
     getInitiateUserData(): UserData | null {
-        // const parseSecretKey = JSON.parse(Cookies.get())
-        const tempUserData = Cookies.get(TEMP_AUTH_DATA);
-        return tempUserData ? JSON.parse(tempUserData) : null;
+        const secretKey = Cookies.get(T_DATA_KEY);
+        const initiateUserData = Cookies.get(INITIATE_D);
+        
+        if (secretKey && initiateUserData) {
+            const decryptedData = decryptUserData(JSON.parse(initiateUserData), JSON.parse(secretKey));
+            console.log(decryptedData);
+            return decryptedData;
+        }
+        return null;
     },
 
     getSessionId(): string | undefined {
