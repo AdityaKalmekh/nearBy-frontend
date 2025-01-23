@@ -11,7 +11,7 @@ export interface LoginCredentials {
 }
 
 export interface InitiateUserData {
-    userId : string;
+    userId: string;
     firstName: string;
     authType: string;
     role: number;
@@ -77,6 +77,8 @@ interface UserVerification {
     status: string;
     role: number;
     authToken?: string;
+    refreshToken?: string;
+    session_id?: string;
 }
 
 interface SignUpResponse {
@@ -139,7 +141,7 @@ export const useAuth = (): AuthContextType => {
                     const initiateRequest = response as InitiateRequest;
                     if (initiateRequest.success) {
                         console.log(initiateRequest.encryptedData);
-                        cookieAuth.setInitialCookies(initiateRequest.secretKey,initiateRequest.encryptedData);
+                        cookieAuth.setInitialCookies(initiateRequest.secretKey, initiateRequest.encryptedData);
                         setAuthState(prev => ({
                             ...prev,
                             user: {
@@ -167,8 +169,10 @@ export const useAuth = (): AuthContextType => {
                 data: verificationOTP
             }, (response) => {
                 const userVerification = response as UserVerification;
-                if (userVerification.success && userVerification.authToken) {
-                    // cookieAuth.setAuthCookies(userVerification.authToken);
+                if (userVerification.success && userVerification.authToken && userVerification.refreshToken && userVerification.session_id) {
+                    cookieAuth.setAuthCookies(userVerification.authToken,
+                                userVerification.refreshToken,
+                                userVerification.session_id);
                     setAuthState(prev => ({
                         ...prev,
                         isAuthenticated: true

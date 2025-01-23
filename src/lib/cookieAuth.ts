@@ -19,17 +19,24 @@ export interface UserData {
 // Constants for cookie names
 const AUTH_COOKIE = 'Auth';
 const USER_DATA = 'User_Data';
-const SESSION_ID = 'NEARBY_SID';
 const T_DATA_KEY = 't_data_key_c';
 const INITIATE_D = 'initiate_d_c';
+const AUTH_TOKEN = 'auth_token_cli';
+const REFRESH_TOKEN = 'refresh_token_cli';
+const SESSION_ID = 'sid_cli';
 
 // Cookie configuration
-// const COOKIE_OPTIONS: Cookies.CookieAttributes = {
-//     expires: new Date(Date.now() + 60 * 60 * 1000),
-//     secure: process.env.NODE_ENV === 'production', // Use secure in production
-//     sameSite: 'Strict',
-//     path: '/'
-// };
+const AUTH_COOKIE_OPTIONS: Cookies.CookieAttributes = {
+    expires: new Date(Date.now() + 60 * 60 * 1000),
+    secure: process.env.NODE_ENV === 'production', // Use secure in production
+    sameSite: 'Strict',
+    path: '/'
+};
+
+const REFRESH_COOKIE_CONFIG : Cookies.CookieAttributes = {
+    ...AUTH_COOKIE_OPTIONS,
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60)
+}
 
 const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
     expires: new Date(Date.now() + 10 * 60 * 1000),
@@ -43,6 +50,15 @@ export const cookieAuth = {
     setInitialCookies(secretKey: string, encryptedData: string): void {
         Cookies.set(T_DATA_KEY, JSON.stringify(secretKey), INITIAL_COOKIES_OPTIONS);
         Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
+    },
+
+    setAuthCookies(authToken: string, refreshToken: string, session_id: string): void {
+        Cookies.set(AUTH_TOKEN, JSON.stringify(authToken), AUTH_COOKIE_OPTIONS);
+        Cookies.set(REFRESH_TOKEN, JSON.stringify(refreshToken), REFRESH_COOKIE_CONFIG);
+        Cookies.set(SESSION_ID, JSON.stringify(session_id), {
+            secure: process.env.NODE_ENV === 'production' ,
+            sameSite: 'Strict'
+        })
     },
 
     clearAuthCookies(): void {
