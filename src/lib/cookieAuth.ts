@@ -41,6 +41,7 @@ const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
 export const cookieAuth = {
 
     setInitialCookies(secretKey: string, encryptedData: string): void {
+        Cookies.set(AUTH_COOKIE, "true" , INITIAL_COOKIES_OPTIONS);
         Cookies.set(T_DATA_KEY, JSON.stringify(secretKey), INITIAL_COOKIES_OPTIONS);
         Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
     },
