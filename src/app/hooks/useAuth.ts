@@ -249,6 +249,7 @@ export const useAuth = (): AuthContextType => {
             }, (response) => {
                 const providerResponse = response as ProviderResponse;
                 if (providerResponse.success) {
+                    cookieAuth.updateUserData({ providerId: providerResponse.providerId });
                     setAuthState((prev) => {
                         if (!prev.user) {
                             return prev;
