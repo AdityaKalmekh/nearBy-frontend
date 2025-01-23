@@ -34,7 +34,7 @@ const INITIATE_D = 'initiate_d_c';
 const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
     expires: new Date(Date.now() + 10 * 60 * 1000),
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/'
 }
 
