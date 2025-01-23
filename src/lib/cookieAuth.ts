@@ -53,6 +53,7 @@ export const cookieAuth = {
     },
 
     setAuthCookies(authToken: string, refreshToken: string, session_id: string): void {
+        this.clearInitiateUserData();
         Cookies.set(AUTH_TOKEN, JSON.stringify(authToken), AUTH_COOKIE_OPTIONS);
         Cookies.set(REFRESH_TOKEN, JSON.stringify(refreshToken), REFRESH_COOKIE_CONFIG);
         Cookies.set(SESSION_ID, JSON.stringify(session_id), {
@@ -65,6 +66,11 @@ export const cookieAuth = {
         Cookies.remove(AUTH_COOKIE);
         Cookies.remove(USER_DATA);
         Cookies.remove(SESSION_ID);
+    },
+
+    clearInitiateUserData() : void {
+        Cookies.remove(T_DATA_KEY);
+        Cookies.remove(INITIATE_D);
     },
 
     isAuthenticated(): boolean {
