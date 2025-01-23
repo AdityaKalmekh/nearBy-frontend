@@ -34,14 +34,13 @@ const INITIATE_D = 'initiate_d_c';
 const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
     expires: new Date(Date.now() + 10 * 60 * 1000),
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'Strict',
     path: '/'
 }
 
 export const cookieAuth = {
 
     setInitialCookies(secretKey: string, encryptedData: string): void {
-        Cookies.set(AUTH_COOKIE, "true" , INITIAL_COOKIES_OPTIONS);
         Cookies.set(T_DATA_KEY, JSON.stringify(secretKey), INITIAL_COOKIES_OPTIONS);
         Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
     },
