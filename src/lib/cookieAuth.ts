@@ -7,7 +7,7 @@ export interface UserData {
     role: number;
     providerId?: string;
     contactOrEmail: string;
-    firstName?: string; 
+    firstName?: string;
     lastName?: string;
     verifiedEmail?: boolean;
     verifiedPhone?: boolean;
@@ -20,20 +20,38 @@ const AUTH_COOKIE = 'Auth';
 const USER_DATA = 'User_Data';
 const SESSION_ID = 'NEARBY_SID';
 const TEMP_AUTH_DATA = 't_auth_d';
+const T_DATA_KEY = 't_data_key_c';
+const INITIATE_D = 'initiate_d_c';
 
 // Cookie configuration
-const COOKIE_OPTIONS: Cookies.CookieAttributes = {
-    expires : new Date(Date.now() + 60 * 60 * 1000),
-    secure: process.env.NODE_ENV === 'production', // Use secure in production
+// const COOKIE_OPTIONS: Cookies.CookieAttributes = {
+//     expires: new Date(Date.now() + 60 * 60 * 1000),
+//     secure: process.env.NODE_ENV === 'production', // Use secure in production
+//     sameSite: 'Strict',
+//     path: '/'
+// };
+
+const INITIAL_COOKIES_OPTIONS : Cookies.CookieAttributes = {
+    expires: new Date(Date.now() + 10 * 60 * 1000),
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'Strict',
     path: '/'
-};
+}
 
 export const cookieAuth = {
-    setAuthCookies(authToken:string): void {
-        Cookies.set(AUTH_COOKIE, 'true', COOKIE_OPTIONS);
-        console.log("Cookie auth token ",authToken);
-        // Cookies.set("auth_token",authToken,COOKIE_OPTIONS);
+
+    setInitialCookies(): void {
+        const secretKey = Cookies.get('t_data_key');
+        const encrpData = Cookies.get('initiate_d');
+
+        console.log("received server side cookies ",secretKey);
+        
+        if (secretKey && encrpData) {
+            Cookies.set(T_DATA_KEY, secretKey, INITIAL_COOKIES_OPTIONS);
+            Cookies.set(INITIATE_D, encrpData, INITIAL_COOKIES_OPTIONS);
+        } else {
+            throw new Error('Secret key or data is not define');
+        }
     },
 
     clearAuthCookies(): void {
@@ -51,7 +69,8 @@ export const cookieAuth = {
         return userData ? JSON.parse(userData) : null;
     },
 
-    getTempUserData(): UserData | null {
+    getInitiateUserData(): UserData | null {
+        // const parseSecretKey = JSON.parse(Cookies.get())
         const tempUserData = Cookies.get(TEMP_AUTH_DATA);
         return tempUserData ? JSON.parse(tempUserData) : null;
     },

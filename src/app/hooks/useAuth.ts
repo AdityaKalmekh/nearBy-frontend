@@ -107,7 +107,7 @@ export const useAuth = (): AuthContextType => {
             }));
             setLoading(false);
         } else {
-            const user = cookieAuth.getTempUserData();
+            const user = cookieAuth.getInitiateUserData();
             setAuthState(prev => ({
                 ...prev,
                 isAuthenticated,
@@ -128,6 +128,7 @@ export const useAuth = (): AuthContextType => {
                 (response) => {
                     const initiateRequest = response as InitiateRequest;
                     if (initiateRequest.success) {
+                        cookieAuth.setInitialCookies();
                         setAuthState(prev => ({
                             ...prev,
                             user: {
@@ -161,7 +162,7 @@ export const useAuth = (): AuthContextType => {
             }, (response) => {
                 const userVerification = response as UserVerification;
                 if (userVerification.success && userVerification.authToken) {
-                    cookieAuth.setAuthCookies(userVerification.authToken);
+                    // cookieAuth.setAuthCookies(userVerification.authToken);
                     setAuthState(prev => ({
                         ...prev,
                         isAuthenticated: true
