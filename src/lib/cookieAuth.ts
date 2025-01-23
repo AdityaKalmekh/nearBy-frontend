@@ -22,6 +22,7 @@ export interface UpdateUserData {
     firstName?: string;
     lastName?: string;
     providerId?: string;
+    role?: number;
 }
 
 // Constants for cookie names
@@ -108,20 +109,21 @@ export const cookieAuth = {
     updateUserData(updateUserData: UpdateUserData): void {
         if (updateUserData.providerId) {
             const existingData = Cookies.get(USER_DATA);
-            if (existingData){
+            if (existingData) {
                 Cookies.set(USER_DATA, JSON.stringify({
                     ...JSON.parse(existingData),
-                    providerId: updateUserData.providerId
+                    providerId: updateUserData.providerId,
+                    status: "active"
                 }));
             }
-        }else {
+        } else {
             const existingData = Cookies.get(USER_DATA);
-            if (existingData){
+            if (existingData) {
                 Cookies.set(USER_DATA, JSON.stringify({
                     ...JSON.parse(existingData),
                     firstName: updateUserData.firstName,
                     lastName: updateUserData.lastName,
-                    status: "service_details_pending"
+                    status: updateUserData.role === 0 ? "service_details_pending" : "active"
                 }));
             }
         }

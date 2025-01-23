@@ -204,7 +204,8 @@ export const useAuth = (): AuthContextType => {
                 if (signUpResponse.success) {
                     cookieAuth.updateUserData({
                         firstName: signUpResponse.firstName,
-                        lastName: signUpResponse.lastName
+                        lastName: signUpResponse.lastName,
+                        role: signUpResponse.role
                     });
                     setAuthState((prev) => {
                         if (!prev.user) {
