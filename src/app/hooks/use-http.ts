@@ -21,7 +21,11 @@ type RequestConfig<T> = GetRequestConfig | JsonRequestConfig<T>;
 interface HttpResponse<T> {
     error: Error | null;
     isLoading: boolean;
-    sendRequest: <D>(config: RequestConfig<D>, applyData: (data: T) => void) => Promise<void>;
+    sendRequest: <D>(
+        config: RequestConfig<D>, 
+        applyData: (data: T) => void,
+        handleError?: (error: Error) => void,
+    ) => Promise<void>;
     clearError: () => void;
 }
 
@@ -35,7 +39,8 @@ const useHttp = <T>(): HttpResponse<T> => {
 
     const sendRequest = useCallback(async <D>(
         requestConfig: RequestConfig<D>,
-        applyData: (data: T) => void
+        applyData: (data: T) => void,
+        handleError?: (error: Error) => void
     ) => {
         setIsLoading(true);
         setError(null);
@@ -62,9 +67,7 @@ const useHttp = <T>(): HttpResponse<T> => {
                     : JSON.stringify(requestConfig.data);
             }
 
-            // console.log(JSON.stringify(requestConfig.data));
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/${requestConfig.url}`, requestOptions);
-        
             const responseData = await response.json();
             
             if (!response.ok) {
@@ -73,10 +76,14 @@ const useHttp = <T>(): HttpResponse<T> => {
                 throw new Error(errorMessage);
             }
 
-            // const responseData = await response.json();
             applyData(responseData);
         } catch (err) {
-            setError(err instanceof Error ? err : new Error('Something went wrong'));
+            const error = err instanceof Error ? err : new Error('Something went wrong')
+            setError(error);
+
+            if (handleError) {
+                handleError(error);
+            }
         } finally {
             setIsLoading(false);
         }

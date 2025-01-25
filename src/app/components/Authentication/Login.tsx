@@ -30,7 +30,9 @@ export default function Login() {
         register,
         handleSubmit,
         formState: { errors, isSubmitting },
-        setError
+        setError,
+        reset,
+        clearErrors
     } = useForm<FormInputs>({
         defaultValues: {
             contactInfo: ''
@@ -41,11 +43,12 @@ export default function Login() {
 
     // Watch for input changes to clear errors
     const hanleInputFocus = () => {
+        clearErrors('contactInfo');
         if (error) {
             clearError?.();
         }
     }
-
+    
     const errorMessage = errors.contactInfo?.message || error?.message;
     const validateInput = (input: string) => {
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -100,12 +103,22 @@ export default function Login() {
             const otpResult = await initiateAuth(requestData);
 
             if (otpResult) {
+                reset();
                 router.push(`/OtpVerification`);
-            }
+            } 
         } catch (error) {
             setError('contactInfo', {
                 type: 'manual',
                 message: error instanceof Error ? error.message : 'An error occurred'
+            });
+
+            reset({ contactInfo: '' }, { 
+                keepErrors: true,
+                keepDirtyValues: false,
+                keepIsSubmitted: false,
+                keepTouched: false,
+                keepIsValid: false,
+                keepSubmitCount: false
             });
         }
     };

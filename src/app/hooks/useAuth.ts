@@ -4,7 +4,6 @@ import useHttp from "./use-http";
 import { FormData } from "../components/forms/signup";
 import { LocationData } from "./useLocation";
 import { SelectedServiceItem } from "../provider/services/page";
-
 export interface LoginCredentials {
     email: string;
     password: string;
@@ -142,8 +141,10 @@ export const useAuth = (): AuthContextType => {
         }
     }
 
-    const initiateAuth = async (requestData: AuthRequest): Promise<boolean> => {
-        return new Promise((resolve) => {
+    const initiateAuth = async (
+        requestData: AuthRequest
+    ): Promise<boolean> => {
+        return new Promise((resolve, reject) => {
             sendRequest({
                 url: 'auth/initiate',
                 method: 'POST',
@@ -170,7 +171,11 @@ export const useAuth = (): AuthContextType => {
                     } else {
                         resolve(false);
                     }
-                });
+                },
+                (error) => {
+                    reject(error);
+                }
+            );
         });
     };
 
