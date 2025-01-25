@@ -22,11 +22,16 @@ interface HttpResponse<T> {
     error: Error | null;
     isLoading: boolean;
     sendRequest: <D>(config: RequestConfig<D>, applyData: (data: T) => void) => Promise<void>;
+    clearError: () => void;
 }
 
 const useHttp = <T>(): HttpResponse<T> => {
     const [error, setError] = useState<Error | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    const clearError = useCallback(() => {
+        setError(null);
+    },[])
 
     const sendRequest = useCallback(async <D>(
         requestConfig: RequestConfig<D>,
@@ -59,12 +64,7 @@ const useHttp = <T>(): HttpResponse<T> => {
 
             // console.log(JSON.stringify(requestConfig.data));
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/${requestConfig.url}`, requestOptions);
-            
-            console.log('Response headers:', {
-                'set-cookie': response.headers.get('set-cookie'),
-                'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
-            });
-    
+        
             const responseData = await response.json();
             
             if (!response.ok) {
@@ -86,6 +86,7 @@ const useHttp = <T>(): HttpResponse<T> => {
         error,
         isLoading,
         sendRequest,
+        clearError
     };
 };
 

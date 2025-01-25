@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 import LoginNav from "@/app/components/navbar/LoginNavbar";
 import { useForm } from 'react-hook-form';
 import { useAuthContext } from "@/contexts/auth-context";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type FormInputs = {
     contactInfo: string;
@@ -21,7 +22,9 @@ export default function Login() {
     const router = useRouter();
     const pathName = usePathname();
     const role = pathName.split('/')[1];
-    const { initiateAuth, error, isLoading } = useAuthContext();
+    const { initiateAuth, error, isLoading, clearError } = useAuthContext();
+
+    console.log({ isLoading });
 
     const {
         register,
@@ -32,8 +35,18 @@ export default function Login() {
         defaultValues: {
             contactInfo: ''
         }
-    })
+    });
 
+    console.log({ isSubmitting });
+
+    // Watch for input changes to clear errors
+    const hanleInputFocus = () => {
+        if (error) {
+            clearError?.();
+        }
+    }
+
+    const errorMessage = errors.contactInfo?.message || error?.message;
     const validateInput = (input: string) => {
         const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         const phonePattern = /^(\+?\d{1,4}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
@@ -112,26 +125,29 @@ export default function Login() {
                             {...register('contactInfo', {
                                 required: 'Please enter a phone number or email'
                             })}
-                            disabled={isLoading || isSubmitting}
+                            disabled={isLoading}
                             placeholder="Enter phone number or email"
                             className="w-full px-4 py-3 rounded-lg bg-gray-100 border-0 focus:ring-1 focus:ring-black focus:outline-none text-gray-900 placeholder-gray-500"
                             autoComplete="off"
+                            onFocus={hanleInputFocus}
                         />
-                        {(errors.contactInfo || error) && (
+                        {(errorMessage) && (
                             <div className="flex items-center space-x-2 text-red-500 text-sm mt-1">
-                                <span>{`${errors.contactInfo?.message}` || `${error?.message}`}</span>
+                                <Alert variant="destructive">
+                                    <AlertDescription>{errorMessage}</AlertDescription>
+                                </Alert>
                             </div>
                         )}
                     </div>
 
                     <button
                         type="submit"
-                        disabled={isLoading || isSubmitting}
+                        disabled={isLoading}
                         className={`w-full relative bg-black text-white rounded-lg py-3 px-4 font-medium 
                             ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-800'} 
                             transition-colors`}
                     >
-                        {(isLoading || isSubmitting) ? (
+                        {(isLoading) ? (
                             <div className="flex items-center justify-center">
                                 <svg
                                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"

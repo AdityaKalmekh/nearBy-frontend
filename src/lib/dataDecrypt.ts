@@ -5,15 +5,6 @@ interface EncryptedData {
     iv: string;
 } 
 
-// interface InitiateUserData {
-//     userId: string;
-//     firstName: string | '';
-//     authType: string;
-//     role: number;
-//     isNewUser: boolean;
-//     contactOrEmail: string;
-// }
-
 export const decryptUserData = (encryptedData: EncryptedData, secretKey: string): InitiateUserData => {
     try {
         // Decrypt the data

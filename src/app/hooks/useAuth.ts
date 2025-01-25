@@ -17,7 +17,7 @@ export interface InitiateUserData {
     role: number;
     isNewUser: boolean;
     contactOrEmail: string;
-    providerId?: string;
+    status: string;
 }
 
 interface InitiateRequest {
@@ -50,11 +50,13 @@ export interface AuthContextType {
     logout: () => void;
     checkAuthStatus: () => void;
     initiateAuth: (requestData: AuthRequest) => Promise<boolean>;
-    user: UserData | null | InitiateUserData;
+    user: UserData | null;
     verifyOtp: (verificationOTP: OtpData) => Promise<UserVerificationReturn>;
     loading: boolean;
     signUp: (formData: FormData) => Promise<signUpResult>;
     registerProvider: (selectedServices: SelectedServiceItem[], locationDetails: LocationData) => Promise<boolean>;
+    reSendOTP: () => Promise<boolean>;
+    clearError: () => void;
 }
 
 type AuthType = 'Email' | 'PhoneNo';
@@ -67,7 +69,7 @@ interface AuthRequest {
 }
 
 interface AuthState {
-    user: UserData | null | InitiateUserData;
+    user: UserData | null;
     isAuthenticated: boolean;
 }
 
@@ -95,6 +97,11 @@ interface SignUpResponse {
     role: number
 }
 
+interface ResendOTPResponse {
+    success: boolean;
+    otp: string;
+}
+
 type ProviderResponse = {
     success: boolean,
     message: string,
@@ -106,7 +113,7 @@ export const useAuth = (): AuthContextType => {
         user: null,
         isAuthenticated: false
     });
-    const { error, sendRequest, isLoading } = useHttp();
+    const { error, sendRequest, isLoading, clearError } = useHttp();
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
@@ -154,8 +161,9 @@ export const useAuth = (): AuthContextType => {
                                 authType: initiateRequest.user.authType,
                                 role: initiateRequest.user.role,
                                 contactOrEmail: requestData.email || requestData.phoneNo || '',
-                                firstName: initiateRequest.user.firstName || '',
-                                isNewUser: initiateRequest.user.isNewUser
+                                firstName: initiateRequest.user.firstName,
+                                isNewUser: initiateRequest.user.isNewUser,
+                                status: initiateRequest.user.status
                             }
                         }));
                         resolve(true);
@@ -271,6 +279,24 @@ export const useAuth = (): AuthContextType => {
         });
     }
 
+    const reSendOTP = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            sendRequest({
+                url: 'resendOTP',
+                method: 'PATCH',
+                data: authState.user
+            }, (response) => {
+                const resendResponse = response as ResendOTPResponse;
+                console.log({ resendResponse });
+                if (resendResponse.success) {
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            });
+        })
+    }
+
     const logout = () => {
         cookieAuth.clearAuthCookies();
     }
@@ -286,6 +312,8 @@ export const useAuth = (): AuthContextType => {
         logout,
         loading,
         signUp,
-        registerProvider
+        registerProvider,
+        reSendOTP,
+        clearError
     }
 }

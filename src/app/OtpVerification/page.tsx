@@ -9,15 +9,19 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAuthContext } from '@/contexts/auth-context';
 
 const Page = () => {
-    const { user, verifyOtp, error, isLoading, loading } = useAuthContext();
+    const { user, verifyOtp, error, isLoading, loading, reSendOTP } = useAuthContext();
     const router = useRouter();
     const hasMounted = useRef(false);
     const initialState: VerificationState = {
         code: ['', '', '', ''],
-        timer: 2,
+        timer: 10,
+        resendCount: 0,
+        isResendDisable: false,
         phoneNoOrEmail: user?.contactOrEmail || ''
     };
     const [state, setState] = useState<VerificationState>(initialState);
+
+    console.log(error);
     
     useEffect(() => {
         if (!hasMounted.current) {
@@ -25,6 +29,20 @@ const Page = () => {
             return;
         }
     }, []);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (state.timer > 0) {
+            interval = setInterval(() => {
+                setState(prev => ({
+                    ...prev,
+                    timer: prev.timer - 1,
+                    isResendDisabled: prev.timer > 1
+                }));
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [state.timer]);
 
     if (loading) {
         return (
@@ -59,7 +77,7 @@ const Page = () => {
             }
             if (newCode.every(digit => digit.trim() !== '')) {
                 if (!user) {
-                router.push('/');
+                    router.push('/');
                     return;
                 }
                 const otp = newCode.join('');
@@ -72,7 +90,7 @@ const Page = () => {
                     isNewUser: user.isNewUser!
                 };
                 const { status, success, role } = await verifyOtp(verificationData);
-                
+
                 if (success) {
                     if (status === 'pending') {
                         router.push("/signup");
@@ -104,13 +122,26 @@ const Page = () => {
         router.push("/Login");
     };
 
-    const handleResendCode = (): void => {
+    const handleResendCode = async () => {
         setState(prevState => ({
             ...prevState,
-            timer: 2,
-            code: ['', '', '', '']
+            isResendDisable: true
         }));
-        // Add your resend code logic here
+
+        const response = await reSendOTP();
+        if (response) {
+            setState(prevState => ({
+                ...prevState,
+                timer: 10,
+                code: ['', '', '', ''],
+                resendCount: prevState.resendCount + 1
+            }));
+        }else { 
+            setState(prevState => ({
+                ...prevState,
+                isResendDisable: true
+            }))
+        }
     };
 
     const handleNextClick = (): void => {
@@ -148,7 +179,6 @@ const Page = () => {
             <main className="max-w-md mx-auto p-6">
                 <div className="space-y-6">
                     {user.isNewUser ? (<h2 className="text-2xl font-semibold text-center">
-                        {/* Welcome back, {user?.firstName}. */}
                         Enter the 4-digit code sent to you at {user.contactOrEmail}.
                     </h2>) : (
                         <div>
@@ -194,7 +224,9 @@ const Page = () => {
                             disabled={state.timer > 0}
                             className="w-full text-gray-500 text-center py-2 disabled:opacity-50"
                         >
-                            Resend code via SMS ({state.timer}:0{state.timer})
+                            {state.timer > 0
+                                ? `Resend code via SMS (${Math.floor(state.timer / 60)}:${String(state.timer % 60).padStart(2, '0')})`
+                                : 'Resend code via SMS'}
                         </button>
                         <button className="w-full text-gray-700 font-medium text-center py-2">
                             More options

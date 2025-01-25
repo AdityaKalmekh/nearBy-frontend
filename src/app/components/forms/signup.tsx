@@ -8,6 +8,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { useAuthContext } from "@/contexts/auth-context";
+import Cookies from "js-cookie";
+import { useEffect } from "react";
 export interface FormData {
     firstName: string;
     lastName: string;
@@ -15,10 +17,11 @@ export interface FormData {
 
 const SignUpForm = () => {
 
-    const { signUp, isLoading, error, user } = useAuthContext();
+    const { signUp, isLoading, error } = useAuthContext();
     const router = useRouter();
     const {
         register,
+        setValue,
         handleSubmit,
         formState: { errors, isSubmitting },
     } = useForm<FormData>({
@@ -27,8 +30,16 @@ const SignUpForm = () => {
             lastName: ''
         }
     });
+
+    useEffect(() => {
+        const userData = Cookies.get('user_data');
+        if (userData){
+            const { firstName, lastName} = JSON.parse(userData);
+            if (firstName) setValue('firstName', firstName);
+            if (lastName) setValue('lastName', lastName);
+        }
+    },[setValue])
     
-    console.log(user);
     
     const onSubmit = async (formData: FormData) => {
         const { success, data} = await signUp(formData);

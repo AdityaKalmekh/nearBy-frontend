@@ -7,9 +7,9 @@ export interface UserData {
     userId: string;
     authType: string;
     role: number;
-    providerId: string | '';
+    providerId?: string;
     contactOrEmail: string;
-    firstName: string | '';
+    firstName: string;
     lastName?: string;
     verifiedEmail?: boolean;
     verifiedPhone?: boolean;

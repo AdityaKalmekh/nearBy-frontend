@@ -11,37 +11,9 @@ const publicPaths = [
 
 export function middleware(request: NextRequest) {
     const authToken = request.cookies.get('auth_token_cli');
-    const refreshToken = request.cookies.get('refresh_token_cli');
+    // const refreshToken = request.cookies.get('refresh_token_cli');
     const userData = request.cookies.get('user_data');
-    console.log(refreshToken);
-    console.log(authToken);
-    console.log(userData);
-    
-    // const secretKey = request.cookies.get('t_data_key');
-    // const encryptedData = request.cookies.get('initiate_d');
-    // console.log("Auth cookies retrival ",auth);
-    // console.log("Auth token ", authToken);
-
     const { pathname } = request.nextUrl;
-
-    // if (pathname.startsWith('/OtpVerification')) {
-    //     if (!secretKey?.value || !encryptedData?.value) {
-    //         console.log('Missing required cookies');
-    //         return;
-    //     }
-
-    //     try {
-    //         const parsedEncryptedData = JSON.parse(encryptedData.value);
-    //         const parsedSecretKey = JSON.parse(secretKey.value);
-    //         console.log('Parsed encrypted data:', parsedEncryptedData);
-    //         console.log('secretkey value', secretKey.value);
-            
-    //         const decryptedData = decryptUserData(parsedEncryptedData, parsedSecretKey);
-    //         console.log('Decrypted data:', decryptedData);
-    //     } catch (error) {
-    //         console.error('Error processing data:', error);
-    //     }
-    // }
 
     // More precise public path checking
     const isPublicPath = publicPaths.some(path =>
@@ -60,8 +32,6 @@ export function middleware(request: NextRequest) {
 
     // If no auth and trying to access protected route
     if (!authToken || !userData) {
-        console.log("User_Data cookie ",userData);
-        console.log("AuthToken cookie", authToken);
         if (!isProtectedRoute || isPublicPath) {
             return NextResponse.next();
         }
@@ -74,10 +44,6 @@ export function middleware(request: NextRequest) {
         const userRole = decodedPayload.role;
 
         const user = JSON.parse(userData.value);
-        // console.log("User_Data2 cookie ", user);
-        // console.log("AuthToken cookie ", authToken);
-        // console.log("Decode user role ",userRole);
-
         if (!user) {
             const response = NextResponse.redirect(new URL('/', request.url));
             response.cookies.delete('AuthToken');
@@ -129,8 +95,8 @@ export function middleware(request: NextRequest) {
     } catch (error) {
         console.error(error);
         const response = NextResponse.redirect(new URL('/', request.url));
-        response.cookies.delete('AuthToken');
-        response.cookies.delete('User_Data');
+        response.cookies.delete('auth_token_cli');
+        response.cookies.delete('user_data');
         return response;
     }
 
