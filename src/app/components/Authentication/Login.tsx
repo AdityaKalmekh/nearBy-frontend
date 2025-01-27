@@ -24,8 +24,6 @@ export default function Login() {
     const role = pathName.split('/')[1];
     const { initiateAuth, error, isLoading, clearError } = useAuthContext();
 
-    console.log({ isLoading });
-
     const {
         register,
         handleSubmit,
@@ -39,10 +37,8 @@ export default function Login() {
         }
     });
 
-    console.log({ isSubmitting });
-
     // Watch for input changes to clear errors
-    const hanleInputFocus = () => {
+    const handleInputFocus = () => {
         clearErrors('contactInfo');
         if (error) {
             clearError?.();
@@ -104,7 +100,7 @@ export default function Login() {
 
             if (otpResult) {
                 reset();
-                router.push(`/OtpVerification`);
+                router.push(`/verification`);
             } 
         } catch (error) {
             setError('contactInfo', {
@@ -138,11 +134,11 @@ export default function Login() {
                             {...register('contactInfo', {
                                 required: 'Please enter a phone number or email'
                             })}
-                            disabled={isLoading}
+                            disabled={isLoading || isSubmitting}
                             placeholder="Enter phone number or email"
                             className="w-full px-4 py-3 rounded-lg bg-gray-100 border-0 focus:ring-1 focus:ring-black focus:outline-none text-gray-900 placeholder-gray-500"
                             autoComplete="off"
-                            onFocus={hanleInputFocus}
+                            onFocus={handleInputFocus}
                         />
                         {(errorMessage) && (
                             <div className="flex items-center space-x-2 text-red-500 text-sm mt-1">
@@ -155,12 +151,12 @@ export default function Login() {
 
                     <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || isSubmitting}
                         className={`w-full relative bg-black text-white rounded-lg py-3 px-4 font-medium 
                             ${isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-zinc-800'} 
                             transition-colors`}
                     >
-                        {(isLoading) ? (
+                        {(isLoading || isSubmitting) ? (
                             <div className="flex items-center justify-center">
                                 <svg
                                     className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
