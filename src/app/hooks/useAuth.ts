@@ -74,8 +74,8 @@ interface AuthState {
 
 interface UserVerificationReturn {
     success: boolean;
-    status: string;
-    role: number;
+    status?: string;
+    role?: number;
 }
 
 interface UserVerificationResponse {
@@ -164,7 +164,7 @@ export const useAuth = (): AuthContextType => {
                                 contactOrEmail: requestData.email || requestData.phoneNo || '',
                                 firstName: initiateRequest.user.firstName,
                                 isNewUser: initiateRequest.user.isNewUser,
-                                status: initiateRequest.user.status
+                                status: initiateRequest.user.status,
                             }
                         }));
                         resolve(true);
@@ -192,10 +192,21 @@ export const useAuth = (): AuthContextType => {
                         userVerification.refreshToken,
                         userVerification.session_id, userVerification.user);
 
-                    setAuthState(prev => ({
-                        ...prev,
-                        isAuthenticated: true
-                    }));
+                    
+                    setAuthState((prev) => {
+                        if (!prev.user) {
+                            return prev;
+                        }
+                        return {
+                            ...prev,
+                            user: {
+                                ...prev.user,
+                                ...userVerification.user
+                            },
+                            isAuthenticated: true
+                        }
+                    });
+
                     resolve({
                         success: true,
                         status: userVerification.user.status,
