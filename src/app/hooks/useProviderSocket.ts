@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from 'react';
 import { initializeSocket } from '@/lib/socket';
+import useHttp from './use-http';
 
 interface RequestDisplay {
     userId: string,
@@ -12,34 +13,36 @@ interface RequestDisplay {
 }
 
 export const useProviderSocket = (providerId: string | undefined) => {
-    const [activeRequest, setActiveRequest] = useState<RequestDisplay | null>(null);
+    const [activeRequest, setActiveRequest] = useState<RequestDisplay | null>();
     const [timer, setTimer] = useState<number>(20);
     const timerRef = useRef<NodeJS.Timeout>();
     const [accepted, setAccepted] = useState<boolean>(false);
+    const { sendRequest } = useHttp();
 
     useEffect(() => {
         if (!providerId) return;
 
         const socket = initializeSocket(providerId);
 
-        if (socket){
+        if (socket) {
 
             socket.on('connect', () => {
                 console.log('Socket connected:', socket.id);
                 socket.emit('auth:provider', providerId);
             });
-    
+
             socket.on('new:request', (data: RequestDisplay) => {
+                console.log({ data });
                 setActiveRequest(data);
                 setTimer(20);
                 startTimer();
             });
-    
-            socket.on('request:accepted', (data: RequestDisplay) =>{
-                setActiveRequest((prevData) => ({...prevData, ...data}));
+
+            socket.on('request:accepted', (data: RequestDisplay) => {
+                setActiveRequest((prevData) => ({ ...prevData, ...data }));
                 setAccepted(true);
             })
-    
+
             return () => {
                 socket.off('connect');
                 socket.off('new:request');
@@ -50,7 +53,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
             };
         }
     }, [providerId]);
-    
+
     const startTimer = () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
@@ -94,11 +97,28 @@ export const useProviderSocket = (providerId: string | undefined) => {
         }
     };
 
+    const handleVerifyOTP = async (otp: string) => {
+        return new Promise((resolve) => {
+            sendRequest({
+                url: `/request/${activeRequest?.requestId}/verify`,
+                method: 'POST',
+                data: {
+                    otp,
+                    providerId
+                } 
+            },(response) => {
+                console.log(response);
+                resolve(true);
+            })
+        })
+    }
+
     return {
         accepted,
         activeRequest,
         timer,
         handleAccept: () => handleRequest(true),
-        handleReject: () => handleRequest(false)
+        handleReject: () => handleRequest(false),
+        handleVerifyOTP
     };
 };

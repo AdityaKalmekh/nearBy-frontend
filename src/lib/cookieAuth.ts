@@ -4,17 +4,17 @@ import { InitiateUserData } from '@/app/hooks/useAuth';
 
 // Types and Interfaces
 export interface UserData {
-    userId: string;
-    authType: string;
-    role: number;
+    userId?: string;
+    authType?: string;
+    role?: number;
     providerId?: string;
-    contactOrEmail: string;
-    firstName: string;
+    contactOrEmail?: string;
+    firstName?: string;
     lastName?: string;
     verifiedEmail?: boolean;
     verifiedPhone?: boolean;
-    status: string;
-    isNewUser: boolean;
+    status?: string;
+    isNewUser?: boolean;
     fullName?: string;
 }
 

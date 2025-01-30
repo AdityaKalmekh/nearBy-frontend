@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, ClipboardList, Loader2, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
+import { Check, CheckCircle, ClipboardList, Loader2, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useProviderSocket } from "@/app/hooks/useProviderSocket";
@@ -9,17 +9,59 @@ import { useLocationTracking } from "@/app/hooks/useLocationTracking";
 import { useState } from 'react';
 import ProviderNavbar from '@/app/components/navbar/ProviderNavbar';
 import { useAuthContext } from '@/contexts/auth-context';
+import OTPVerificationModal from '@/app/components/modal/OtpVerification';
 
 const Page = () => {
     const { user, loading } = useAuthContext();
     const providerId = user?.providerId;
-    
     const [activeTab, setActiveTab] = useState('requests');
-    const { accepted, activeRequest, timer, handleAccept, handleReject } = useProviderSocket(providerId);
+    const { 
+        accepted, 
+        activeRequest, 
+        timer, 
+        handleAccept, 
+        handleReject, 
+        handleVerifyOTP 
+    } = useProviderSocket(providerId);
     const {
         isTracking,
         handleStatusChange
     } = useLocationTracking(providerId);
+    const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+    const [verificationPurpose, setVerificationPurpose] = useState<'start' | 'complete'>('start');
+
+    const handleInitiateVerification = () => {
+        setVerificationPurpose('start');
+        setIsOtpModalOpen(true);
+    };
+
+    const handleCompleteService = () => {
+        setVerificationPurpose('complete');
+        setIsOtpModalOpen(true);
+    };
+
+    // const handleVerifyOTP = async (otp: string) => {
+    //     console.log({ otp });
+    //     // try {
+    //     //     // Call your API endpoint based on verificationPurpose
+    //     //     if (verificationPurpose === 'start') {
+    //     //         // Call API to verify start service OTP
+    //     //         // await verifyStartServiceOTP(serviceId, otp);
+    //     //     } else {
+    //     //         // Call API to verify complete service OTP
+    //     //         // await verifyCompleteServiceOTP(serviceId, otp);
+    //     //     }
+    //     //     // Handle success
+    //     // } catch (error) {
+    //     //     // Handle error
+    //     // }
+    //     try {
+    //         sendRequest({
+    //             url: ''
+    //         })
+    //     } catch (error) {
+    //     }
+    // };
 
     const menuItems = [
         { icon: ClipboardList, label: 'Requests', id: 'requests' },
@@ -128,11 +170,26 @@ const Page = () => {
                                                     Call User
                                                 </Button>
                                                 <Button
-                                                    className="w-full sm:flex-1"
+                                                    className="bg-slate-100 hover:bg-slate-200 w-full sm:flex-1"
                                                     variant="outline"
                                                 >
                                                     <MapPin className="mr-2 h-4 w-4" />
                                                     View Location
+                                                </Button>
+
+                                                <Button
+                                                    className="w-full sm:flex-1 bg-[#388E3C] hover:bg-green-900 text-white"
+                                                    onClick={handleInitiateVerification}
+                                                >
+                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                    Start Service
+                                                </Button>
+                                                <Button
+                                                    className="w-full sm:flex-1 bg-teal-600 hover:bg-purple-600 text-white"
+                                                    onClick={handleCompleteService}
+                                                >
+                                                    <Check className="mr-2 h-4 w-4" />
+                                                    Complete Service
                                                 </Button>
                                             </>
                                         ) : (
@@ -245,6 +302,13 @@ const Page = () => {
                     </Card>
                 </div>
             </div>
+
+            <OTPVerificationModal
+                isOpen={isOtpModalOpen}
+                onClose={() => setIsOtpModalOpen(false)}
+                title={verificationPurpose === 'start' ? 'Verify Start Service' : 'Verify Service Completion'}
+                onVerify={handleVerifyOTP}
+            />
         </div >
     )
 }

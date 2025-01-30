@@ -38,13 +38,12 @@ interface Location {
 
 const Page = () => {
     const { user, loading } = useAuthContext();
-
     const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [location, setLocation] = useState<Location | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
+    
     useRequesterSocket(user?.userId, setError);
 
     const { isLoaded } = useLoadScript({
