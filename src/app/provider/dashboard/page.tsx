@@ -178,14 +178,14 @@ const Page = () => {
                                                 </Button>
 
                                                 <Button
-                                                    className="w-full sm:flex-1 bg-[#388E3C] hover:bg-green-900 text-white"
+                                                    className="w-full sm:flex-1 bg-[#388E3C] hover:bg-[#2E7D32] text-white"
                                                     onClick={handleInitiateVerification}
                                                 >
                                                     <CheckCircle className="mr-2 h-4 w-4" />
                                                     Start Service
                                                 </Button>
                                                 <Button
-                                                    className="w-full sm:flex-1 bg-teal-600 hover:bg-purple-600 text-white"
+                                                    className="w-full sm:flex-1 bg-purple-500 hover:bg-purple-600 text-white"
                                                     onClick={handleCompleteService}
                                                 >
                                                     <Check className="mr-2 h-4 w-4" />
