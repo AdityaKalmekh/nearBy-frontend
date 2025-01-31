@@ -37,14 +37,14 @@ interface Location {
 }
 
 const Page = () => {
-    const { user, loading } = useAuthContext();
+    const { loading, userId } = useAuthContext();
     const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
     const [selectedServices, setSelectedServices] = useState<Service[]>([]);
     const [location, setLocation] = useState<Location | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
-    useRequesterSocket(user?.userId, setError);
+    useRequesterSocket(userId, setError);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -93,7 +93,7 @@ const Page = () => {
         const requestData = {
             longitude: location?.lng,
             latitude: location?.lat,
-            userId: user?.userId,
+            userId,
             services: selectedServices,
         }
 

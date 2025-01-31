@@ -4,6 +4,7 @@ import useHttp from "./use-http";
 import { FormData } from "../components/forms/signup";
 import { LocationData } from "./useLocation";
 import { SelectedServiceItem } from "../provider/services/page";
+import { decryptUserId } from "@/lib/dataDecrypt";
 export interface LoginCredentials {
     email: string;
     password: string;
@@ -18,7 +19,6 @@ export interface InitiateUserData {
     contactOrEmail: string;
     status: string;
 }
-
 interface InitiateRequest {
     success: boolean;
     code: number;
@@ -56,6 +56,8 @@ export interface AuthContextType {
     registerProvider: (selectedServices: SelectedServiceItem[], locationDetails: LocationData) => Promise<boolean>;
     reSendOTP: () => Promise<boolean>;
     clearError: () => void;
+    userId: string;
+    providerId: string;
 }
 
 type AuthType = 'Email' | 'PhoneNo';
@@ -70,6 +72,8 @@ interface AuthRequest {
 interface AuthState {
     user: UserData | null;
     isAuthenticated: boolean;
+    userId: string;
+    providerId: string;
 }
 
 interface UserVerificationReturn {
@@ -86,6 +90,10 @@ interface UserVerificationResponse {
     refreshToken: string;
     session_id: string;
     user: UserData;
+    encryptedUId: string;
+    encryptionKey: string;
+    encryptedPId?: string;
+    encryptionPKey?: string;
 }
 
 interface SignUpResponse {
@@ -110,7 +118,9 @@ type ProviderResponse = {
 export const useAuth = (): AuthContextType => {
     const [authState, setAuthState] = useState<AuthState>({
         user: null,
-        isAuthenticated: false
+        isAuthenticated: false,
+        userId: '',
+        providerId: ''
     });
     const { error, sendRequest, isLoading, clearError } = useHttp();
     const [loading, setLoading] = useState<boolean>(true);
@@ -121,15 +131,19 @@ export const useAuth = (): AuthContextType => {
 
     const checkAuthStatus = (): void => {
         const isAuthenticated = cookieAuth.isAuthenticated();
-
         if (isAuthenticated) {
-            const user = cookieAuth.getUserData();
-            setAuthState(prev => ({
-                ...prev,
-                isAuthenticated,
-                user
-            }));
-            setLoading(false);
+            const userData = cookieAuth.getUserData();
+            if (userData) {
+                const { user, userId, providerId } = userData;
+                setAuthState(prev => ({
+                    ...prev,
+                    isAuthenticated,
+                    user,
+                    userId,
+                    providerId
+                }));
+                setLoading(false);
+            }
         } else {
             const user = cookieAuth.getInitiateUserData();
             setAuthState(prev => ({
@@ -187,12 +201,27 @@ export const useAuth = (): AuthContextType => {
                 data: verificationOTP
             }, (response) => {
                 const userVerification = response as UserVerificationResponse;
+                console.log(userVerification);
                 if (userVerification.success) {
                     cookieAuth.setAuthCookies(userVerification.authToken,
                         userVerification.refreshToken,
-                        userVerification.session_id, userVerification.user);
+                        userVerification.session_id,
+                        userVerification.user,
+                        userVerification.encryptedUId,
+                        userVerification.encryptionKey,
+                        userVerification.encryptedPId,
+                        userVerification.encryptionPKey
+                    );
 
-                    
+                    let providerId = '';
+                    if (userVerification.user.role === 0 
+                        && userVerification.encryptedPId 
+                        && userVerification.encryptionPKey) {
+                        providerId = decryptUserId(
+                            JSON.parse(userVerification.encryptedPId),
+                            userVerification.encryptionPKey
+                        );
+                    }
                     setAuthState((prev) => {
                         if (!prev.user) {
                             return prev;
@@ -203,6 +232,8 @@ export const useAuth = (): AuthContextType => {
                                 ...prev.user,
                                 ...userVerification.user
                             },
+                            userId: prev.user.userId || '',
+                            providerId,
                             isAuthenticated: true
                         }
                     });
@@ -320,6 +351,8 @@ export const useAuth = (): AuthContextType => {
     return {
         isAuthenticated: authState.isAuthenticated,
         user: authState.user,
+        userId: authState.userId,
+        providerId: authState.providerId,
         checkAuthStatus,
         initiateAuth,
         isLoading,

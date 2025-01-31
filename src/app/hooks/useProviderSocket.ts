@@ -32,7 +32,6 @@ export const useProviderSocket = (providerId: string | undefined) => {
             });
 
             socket.on('new:request', (data: RequestDisplay) => {
-                console.log({ data });
                 setActiveRequest(data);
                 setTimer(20);
                 startTimer();

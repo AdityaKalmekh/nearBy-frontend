@@ -12,16 +12,16 @@ import { useAuthContext } from '@/contexts/auth-context';
 import OTPVerificationModal from '@/app/components/modal/OtpVerification';
 
 const Page = () => {
-    const { user, loading } = useAuthContext();
-    const providerId = user?.providerId;
+    const { loading, providerId } = useAuthContext();
+
     const [activeTab, setActiveTab] = useState('requests');
-    const { 
-        accepted, 
-        activeRequest, 
-        timer, 
-        handleAccept, 
-        handleReject, 
-        handleVerifyOTP 
+    const {
+        accepted,
+        activeRequest,
+        timer,
+        handleAccept,
+        handleReject,
+        handleVerifyOTP
     } = useProviderSocket(providerId);
     const {
         isTracking,
@@ -39,29 +39,6 @@ const Page = () => {
         setVerificationPurpose('complete');
         setIsOtpModalOpen(true);
     };
-
-    // const handleVerifyOTP = async (otp: string) => {
-    //     console.log({ otp });
-    //     // try {
-    //     //     // Call your API endpoint based on verificationPurpose
-    //     //     if (verificationPurpose === 'start') {
-    //     //         // Call API to verify start service OTP
-    //     //         // await verifyStartServiceOTP(serviceId, otp);
-    //     //     } else {
-    //     //         // Call API to verify complete service OTP
-    //     //         // await verifyCompleteServiceOTP(serviceId, otp);
-    //     //     }
-    //     //     // Handle success
-    //     // } catch (error) {
-    //     //     // Handle error
-    //     // }
-    //     try {
-    //         sendRequest({
-    //             url: ''
-    //         })
-    //     } catch (error) {
-    //     }
-    // };
 
     const menuItems = [
         { icon: ClipboardList, label: 'Requests', id: 'requests' },

@@ -1,5 +1,5 @@
 import Cookies from 'js-cookie';
-import { decryptUserData } from './dataDecrypt';
+import { decryptUserData, decryptUserId } from './dataDecrypt';
 import { InitiateUserData } from '@/app/hooks/useAuth';
 
 // Types and Interfaces
@@ -25,6 +25,12 @@ export interface UpdateUserData {
     role?: number;
 }
 
+export interface DecryptedUserData {
+    user: UserData;
+    userId: string;
+    providerId: string;
+}
+
 // Constants for cookie names
 const AUTH_COOKIE = 'Auth';
 const USER_DATA = 'user_data';
@@ -33,6 +39,10 @@ const INITIATE_D = 'initiate_d_c';
 const AUTH_TOKEN = 'auth_token_cli';
 const REFRESH_TOKEN = 'refresh_token_cli';
 const SESSION_ID = 'sid_cli';
+const USER_ID = 'uid_cli';
+const USER_ID_SECRET_KEY = 'diukey_cli';
+const PROVIDER_ID = 'puid_cli';
+const PROVIDER_ID_SECRET_KEY = 'puidkey_cli';
 
 // Cookie configuration
 const AUTH_COOKIE_OPTIONS: Cookies.CookieAttributes = {
@@ -54,6 +64,11 @@ const INITIAL_COOKIES_OPTIONS: Cookies.CookieAttributes = {
     path: '/'
 }
 
+const USERID_COOKIES_OPTIONS: Cookies.CookieAttributes = {
+    ...AUTH_COOKIE_OPTIONS,
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60)
+}
+
 export const cookieAuth = {
 
     setInitialCookies(secretKey: string, encryptedData: string): void {
@@ -61,9 +76,17 @@ export const cookieAuth = {
         Cookies.set(INITIATE_D, JSON.stringify(encryptedData), INITIAL_COOKIES_OPTIONS);
     },
 
-    setAuthCookies(authToken: string, refreshToken: string, session_id: string, userDt: UserData): void {
+    setAuthCookies(
+        authToken: string,
+        refreshToken: string,
+        session_id: string,
+        userDt: UserData,
+        uid: string,
+        uidKey: string,
+        puid?: string,
+        puidkey?: string
+    ): void {
         this.clearInitiateUserData();
-        console.log({ userDt });
         Cookies.set(AUTH_COOKIE, 'true', REFRESH_COOKIE_CONFIG);
         Cookies.set(AUTH_TOKEN, JSON.stringify(authToken), AUTH_COOKIE_OPTIONS);
         Cookies.set(REFRESH_TOKEN, JSON.stringify(refreshToken), REFRESH_COOKIE_CONFIG);
@@ -72,6 +95,12 @@ export const cookieAuth = {
             sameSite: 'Strict'
         });
         Cookies.set(USER_DATA, JSON.stringify(userDt));
+        Cookies.set(USER_ID, uid, USERID_COOKIES_OPTIONS);
+        Cookies.set(USER_ID_SECRET_KEY, uidKey, USERID_COOKIES_OPTIONS);
+        if (puid && puidkey) {
+            Cookies.set(PROVIDER_ID, puid, USERID_COOKIES_OPTIONS);
+            Cookies.set(PROVIDER_ID_SECRET_KEY, puidkey, USERID_COOKIES_OPTIONS);
+        }
     },
 
     clearAuthCookies(): void {
@@ -89,9 +118,46 @@ export const cookieAuth = {
         return Cookies.get(AUTH_COOKIE) === 'true';
     },
 
-    getUserData(): UserData | null {
-        const userData = Cookies.get(USER_DATA);
-        return userData ? JSON.parse(userData) : null;
+    getUserData(): DecryptedUserData | null {
+        try {
+            const userData = Cookies.get(USER_DATA);
+            const secretKey = Cookies.get(USER_ID_SECRET_KEY);
+            const encryptedUserId = Cookies.get(USER_ID);
+
+            if (!userData || !secretKey || !encryptedUserId) {
+                return null;
+            }
+
+            const userId = decryptUserId(JSON.parse(encryptedUserId), secretKey);
+            if (!userId) {
+                return null;
+            }
+
+            const user: UserData = JSON.parse(userData);
+
+            if (user.role === 0) {
+                const providerSecretKey = Cookies.get(PROVIDER_ID_SECRET_KEY);
+                const encryptedProviderId = Cookies.get(PROVIDER_ID);
+
+                if (providerSecretKey && encryptedProviderId) {
+                    const providerId = decryptUserId(JSON.parse(encryptedProviderId), providerSecretKey);
+
+                    return {
+                        user,
+                        userId,
+                        providerId
+                    }
+                }
+            }
+            return {
+                user,
+                userId,
+                providerId : ''
+            };
+        } catch (error) {
+            console.error('Error getting user data:', error);
+            return null;
+        }
     },
 
     getInitiateUserData(): InitiateUserData | null {
