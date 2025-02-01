@@ -9,7 +9,8 @@ interface RequestDisplay {
     requestId: string,
     firstName: string,
     lastName: string,
-    phoneNo: string
+    phoneNo: string,
+    email: string
 }
 
 export const useProviderSocket = (providerId: string | undefined) => {

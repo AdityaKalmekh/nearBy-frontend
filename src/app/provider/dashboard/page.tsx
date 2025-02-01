@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from '@/components/ui/badge';
-import { Check, CheckCircle, ClipboardList, Loader2, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
+import { Check, CheckCircle, ClipboardList, Loader2, Mail, MapPin, Phone, Settings, User, XCircle } from "lucide-react";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useProviderSocket } from "@/app/hooks/useProviderSocket";
@@ -40,6 +40,8 @@ const Page = () => {
         setIsOtpModalOpen(true);
     };
 
+    console.log({ activeRequest });
+
     const menuItems = [
         { icon: ClipboardList, label: 'Requests', id: 'requests' },
         { icon: Settings, label: 'Services', id: 'services' },
@@ -68,6 +70,9 @@ const Page = () => {
     const totalPages = Math.ceil(dummyData.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentData = dummyData.slice(startIndex, startIndex + itemsPerPage);
+
+    console.log(activeRequest?.phoneNo === '');
+    console.log(activeRequest?.phoneNo);
 
     return (
 
@@ -127,8 +132,17 @@ const Page = () => {
                                                 </span>
                                                 <div className="mt-1">
                                                     <Badge variant="outline" className="text-xs">
-                                                        <Phone className="h-3 w-3 mr-1" />
-                                                        {activeRequest?.phoneNo}
+                                                        {activeRequest?.phoneNo ? (
+                                                            <>
+                                                                <Phone className="h-3 w-3 mr-1" />
+                                                                {activeRequest.phoneNo}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Mail className="h-3 w-3 mr-1" />
+                                                                {activeRequest.email}
+                                                            </>
+                                                        )}
                                                     </Badge>
                                                 </div>
                                             </div>

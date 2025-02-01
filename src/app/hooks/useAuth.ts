@@ -112,7 +112,8 @@ interface ResendOTPResponse {
 type ProviderResponse = {
     success: boolean,
     message: string,
-    providerId: string
+    encryptedPId: string,
+    encryptionPKey: string
 }
 
 export const useAuth = (): AuthContextType => {
@@ -214,8 +215,8 @@ export const useAuth = (): AuthContextType => {
                     );
 
                     let providerId = '';
-                    if (userVerification.user.role === 0 
-                        && userVerification.encryptedPId 
+                    if (userVerification.user.role === 0
+                        && userVerification.encryptedPId
                         && userVerification.encryptionPKey) {
                         providerId = decryptUserId(
                             JSON.parse(userVerification.encryptedPId),
@@ -250,7 +251,7 @@ export const useAuth = (): AuthContextType => {
 
     const signUp = async (formData: FormData): Promise<signUpResult> => {
         return new Promise((resolve) => {
-            sendRequest({
+            sendRequest({   
                 url: 'details',
                 method: 'PATCH',
                 data: formData
@@ -304,7 +305,14 @@ export const useAuth = (): AuthContextType => {
             }, (response) => {
                 const providerResponse = response as ProviderResponse;
                 if (providerResponse.success) {
-                    cookieAuth.updateUserData({ providerId: providerResponse.providerId });
+                    cookieAuth.updateUserData({
+                            encryptedPId: providerResponse.encryptedPId,
+                            encryptionPKey: providerResponse.encryptionPKey
+                        });
+                    const providerId = decryptUserId(
+                        JSON.parse(providerResponse.encryptedPId),
+                        providerResponse.encryptionPKey);
+                
                     setAuthState((prev) => {
                         if (!prev.user) {
                             return prev;
@@ -314,8 +322,9 @@ export const useAuth = (): AuthContextType => {
                             ...prev,
                             user: {
                                 ...prev.user,
-                                providerId: providerResponse.providerId
-                            }
+                                status: "active"
+                            },
+                            providerId
                         };
                     });
                     resolve(true);

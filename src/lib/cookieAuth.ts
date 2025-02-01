@@ -21,8 +21,9 @@ export interface UserData {
 export interface UpdateUserData {
     firstName?: string;
     lastName?: string;
-    providerId?: string;
     role?: number;
+    encryptedPId?: string,
+    encryptionPKey?: string
 }
 
 export interface DecryptedUserData {
@@ -173,14 +174,15 @@ export const cookieAuth = {
     },
 
     updateUserData(updateUserData: UpdateUserData): void {
-        if (updateUserData.providerId) {
+        if (updateUserData.encryptedPId && updateUserData.encryptionPKey) {
             const existingData = Cookies.get(USER_DATA);
             if (existingData) {
                 Cookies.set(USER_DATA, JSON.stringify({
                     ...JSON.parse(existingData),
-                    providerId: updateUserData.providerId,
                     status: "active"
                 }));
+                Cookies.set(PROVIDER_ID, updateUserData.encryptedPId, USERID_COOKIES_OPTIONS);
+                Cookies.set(PROVIDER_ID_SECRET_KEY, updateUserData.encryptionPKey, USERID_COOKIES_OPTIONS);
             }
         } else {
             const existingData = Cookies.get(USER_DATA);

@@ -13,6 +13,7 @@ interface ProviderInfo {
     lastName: string;
     phoneNo: string;
     otp: string;
+    email: string;
 }
 
 const Page = () => {
