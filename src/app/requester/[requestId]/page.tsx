@@ -9,23 +9,27 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface ProviderInfo {
-    firstName: string;
-    lastName: string;
-    phoneNo: string;
-    otp: string;
-    email: string;
+    userInfo: {
+        firstName: string;
+        lastName: string;
+        phoneNo: string;
+        email: string;
+    },
+    otpInfo: {
+        otp: string;
+    }
 }
 
 const Page = () => {
-    const { providerId } = useParams();
+    const { requestId } = useParams();
     const { error, sendRequest, isLoading } = useHttp<ProviderInfo>();
     const [provider, setProvider] = useState<ProviderInfo | null>(null);
     const router = useRouter();
-
+    
     useEffect(() => {
         const fetchProviderDetails = async () => {
             sendRequest({
-                url: `/request/provider-details/${providerId}`,
+                url: `/request/provider-details/${requestId}`,
                 method: "GET",
             }, (response) => {
                 console.log(response);
@@ -33,10 +37,10 @@ const Page = () => {
             })
         }
 
-        if (providerId) {
+        if (requestId) {
             fetchProviderDetails();
         }
-    }, [providerId, sendRequest]);
+    }, [requestId, sendRequest]);
 
     const handleCancel = async () => {
         try {
@@ -113,7 +117,7 @@ const Page = () => {
                                     <User2 className="w-5 h-5 text-gray-500" />
                                     <span className="text-sm font-medium">Name</span>
                                 </div>
-                                <span className="text-sm">{`${provider?.firstName} ${provider?.lastName}`}</span>
+                                <span className="text-sm">{`${provider.userInfo.firstName} ${provider.userInfo.lastName}`}</span>
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -121,7 +125,7 @@ const Page = () => {
                                     <Phone className="w-5 h-5 text-gray-500" />
                                     <span className="text-sm font-medium">Contact</span>
                                 </div>
-                                <span className="text-sm">{provider?.phoneNo}</span>
+                                <span className="text-sm">{provider.userInfo.phoneNo}</span>
                             </div>
 
                             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -134,13 +138,13 @@ const Page = () => {
                         </div>
 
                         {/* OTP Section */}
-                        {provider?.otp && (
+                        {provider.otpInfo.otp && (
                             <div className="mt-6 p-4 bg-primary/5 rounded-lg">
                                 <div className="text-center space-y-2">
                                     <h3 className="text-sm font-medium text-gray-600">Verification Code</h3>
                                     <div className="flex items-center justify-center space-x-2">
                                         <div className="text-3xl font-bold tracking-wider">
-                                            {provider.otp}
+                                            {provider.otpInfo.otp}
                                         </div>
                                         <button
                                             // onClick={handleCopyOTP}

@@ -1,74 +1,171 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { initializeSocket } from '@/lib/socket';
 import useHttp from './use-http';
-
+import { Socket } from 'socket.io-client';
+interface Location {
+    coordinates: [number, number]; // [longitude, latitude]
+}
 interface RequestDisplay {
     userId: string,
     distance: string,
     requestId: string,
     firstName: string,
     lastName: string,
-    phoneNo: string,
-    email: string
+    phoneNo?:  string,
+    email?: string,
+    reqLocation: Location
 }
 
+interface IntialRequestData {
+    distance: string;
+    userId: string;
+    requestId: string;
+    reqLocation: Location
+}
+
+interface RequesterDetailResponse {
+    userInfo: {
+        firstName: string,
+        lastName: string,
+        phoneNo: string,
+        email: string
+    },
+    reqLocation: Location
+}
+
+// interface ServerToClientEvents {
+//     'new:request': (data: RequestDisplay) => void;
+//     'request:accepted': (data: RequestDisplay) => void;
+//     'room:joined': (data: { userId: string; userType: 'provider' | 'requester' }) => void;
+// }
+
+// interface ClientToServerEvents {
+//     'auth:provider': (providerId: string) => void;
+//     'join:service_request': (data: {
+//         serviceRequestId: string;
+//         userId: string;
+//         userType: 'provider' | 'requester';
+//     }) => void;
+// }
+
 export const useProviderSocket = (providerId: string | undefined) => {
-    const [activeRequest, setActiveRequest] = useState<RequestDisplay | null>();
+    const [activeRequest, setActiveRequest] = useState<RequestDisplay | IntialRequestData | null>();
     const [timer, setTimer] = useState<number>(20);
     const timerRef = useRef<NodeJS.Timeout>();
     const [accepted, setAccepted] = useState<boolean>(false);
     const { sendRequest } = useHttp();
+    const socketRef = useRef<Socket | null>(null);
+
+    console.log(activeRequest);
+    
+    const getRequesterDetails = useCallback(async (requestId: string) => {
+        try {
+            return new Promise((resolve, reject) => {
+                sendRequest({
+                    url: `request/requester-details/${requestId}`,
+                    method: 'GET'
+                },
+                    (response) => {
+                        console.log('Requester details:', response);
+                        resolve(response);
+                    },
+                    (error) => {
+                        console.error('Error fetching requester details:', error);
+                        reject(error);
+                    });
+            });
+        } catch (error) {
+            console.error('Error in getRequesterDetails:', error);
+            throw error;
+        }
+    }, [sendRequest]);
 
     useEffect(() => {
         if (!providerId) return;
 
         const socket = initializeSocket(providerId);
+        socketRef.current = socket;
 
-        if (socket) {
+        if (!socket) return;
 
-            socket.on('connect', () => {
-                console.log('Socket connected:', socket.id);
-                socket.emit('auth:provider', providerId);
-            });
-
-            socket.on('new:request', (data: RequestDisplay) => {
-                setActiveRequest(data);
-                setTimer(20);
-                startTimer();
-            });
-
-            socket.on('request:accepted', (data: RequestDisplay) => {
-                setActiveRequest((prevData) => ({ ...prevData, ...data }));
-                setAccepted(true);
-            })
-
-            return () => {
-                socket.off('connect');
-                socket.off('new:request');
-                socket.off('request:accepted');
+        const handleRequestAccepted = async (requestId: string) => {
+            try {
                 if (timerRef.current) {
                     clearInterval(timerRef.current);
                 }
-            };
-        }
-    }, [providerId]);
 
-    const startTimer = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-        }
+                socket.emit('join:service_request', {
+                    serviceRequestId: requestId,
+                    userId: providerId,
+                    userType: 'provider'
+                });
+           
+                const requesterDetails = await getRequesterDetails(requestId)
 
-        timerRef.current = setInterval(() => {
-            setTimer((prev) => {
-                if (prev <= 1) {
-                    clearInterval(timerRef.current);
-                    return 0;
+                // Only update state if component is still mounted
+                if (requesterDetails) {
+                    const response = requesterDetails as RequesterDetailResponse;
+                    setActiveRequest(prevData => {
+                        if (!prevData) {
+                            return prevData;
+                        }
+                        return {
+                            ...prevData,
+                            firstName: response.userInfo.firstName,
+                            lastName: response.userInfo.lastName,
+                            phoneNo: response.userInfo.phoneNo,
+                            reqLocation: response.reqLocation
+                        }
+                    });
+                    setAccepted(true);
                 }
-                return prev - 1;
-            });
-        }, 1000);
-    };
+            } catch (error) {
+                console.error('Error handling accepted request:', error);
+                throw error;
+            }
+        };
+
+        socket.on('connect', () => {
+            console.log('Socket connected for provider:', socket.id);
+            socket.emit('auth:provider', providerId);
+        });
+
+        socket.on('new:request', (data: RequestDisplay) => {
+            setActiveRequest(data);
+            setTimer(20);
+            setAccepted(false);
+
+            // Clear existing timer if any
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+
+            // Start new timer
+            timerRef.current = setInterval(() => {
+                setTimer((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timerRef.current);
+                        setActiveRequest(null);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+        });
+
+        socket.on('request:accepted', handleRequestAccepted);
+        return () => {
+            if (socket) {
+                socket.off('connect');
+                socket.off('new:request');
+                socket.off('request:accepted');
+            }
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
+    }, [providerId, getRequesterDetails]);
 
     const handleRequest = async (accepted: boolean) => {
         if (!activeRequest) return;
@@ -105,8 +202,8 @@ export const useProviderSocket = (providerId: string | undefined) => {
                 data: {
                     otp,
                     providerId
-                } 
-            },(response) => {
+                }
+            }, (response) => {
                 console.log(response);
                 resolve(true);
             })
@@ -119,6 +216,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
         timer,
         handleAccept: () => handleRequest(true),
         handleReject: () => handleRequest(false),
-        handleVerifyOTP
+        handleVerifyOTP,
+        socket: socketRef.current
     };
 };
