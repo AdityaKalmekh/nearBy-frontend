@@ -31,16 +31,61 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
   const mapRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
-  const [positionMarker, setPositionMarker] = useState<google.maps.Marker | null>(null);
+  const [positionMarker, setPositionMarker] = useState<google.maps.marker.AdvancedMarkerElement | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const [prevPosition, setPrevPosition] = useState<google.maps.LatLng | null>(null);
+  const [prevHeading, setPrevHeading] = useState<number | null>(null);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries: ['places'],
+    libraries: ['places', 'marker'],
   });
 
+  const HEADING_THRESHOLD = 5; // degrees
+  const POSITION_THRESHOLD = 5; // meters
+
+  // Create custom navigation arrow element
+  const createNavigationArrow = useCallback(() => {
+    const arrow = document.createElement('div');
+    arrow.innerHTML = `
+      <div class="navigation-arrow" style="
+        width: 24px;
+        height: 24px;
+        background-color: #4285F4;
+        border: 2px solid white;
+        border-radius: 50%;
+        transform: rotate(0deg);
+        transition: transform 0.3s ease;
+      ">
+        <div style="
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-bottom: 16px solid white;
+          position: relative;
+          left: 2px;
+          top: 2px;
+        "></div>
+      </div>
+    `;
+    return arrow;
+  }, []);
+
+  // Calculate distance between two points
+  const calculateDistance = (p1: google.maps.LatLng, p2: google.maps.LatLng) => {
+    return google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+  };
+
+  // Smooth out heading changes
+  const smoothHeading = (newHeading: number, prevHeading: number) => {
+    let diff = ((newHeading - prevHeading + 360) % 360);
+    if (diff > 180) diff -= 360;
+    return prevHeading + diff * 0.3; // Apply dampening factor
+  };
+
   const mapOptions = useMemo<google.maps.MapOptions>(() => ({
-    disableDefaultUI: false,
+    disableDefaultUI: true,
     clickableIcons: true,
     scrollwheel: true,
     zoomControl: true,
@@ -54,17 +99,17 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
     mapId: 'navigation_map'
   }), [requesterLocation]);
 
-  const createNavigationArrow = useCallback(() => {
-    return {
-      path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-      scale: 8,
-      fillColor: '#4285F4', // Google Maps blue
-      fillOpacity: 1,
-      strokeColor: '#FFFFFF',
-      strokeWeight: 2,
-      rotation: 0 // Will be updated with actual heading
-    };
-  }, []);
+  // const createNavigationArrow = useCallback(() => {
+  //   return {
+  //     path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+  //     scale: 8,
+  //     fillColor: '#4285F4', // Google Maps blue
+  //     fillOpacity: 1,
+  //     strokeColor: '#FFFFFF',
+  //     strokeWeight: 2,
+  //     rotation: 0 // Will be updated with actual heading
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (!isLoaded || !mapRef.current) return;
@@ -81,11 +126,11 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
     });
 
     // Initialize position marker with navigation arrow
-    const marker = new google.maps.Marker({
+    const marker = new google.maps.marker.AdvancedMarkerElement({
       map: newMap,
-      icon: createNavigationArrow(),
-      zIndex: 2, // Keep arrow above other elements
-      optimized: true // Better performance for frequent updates
+      content: createNavigationArrow(),
+      position: newMap.getCenter(), // Keep arrow above other elements
+      zIndex: 2 // Better performance for frequent updates
     });
 
     setMap(newMap);
@@ -108,26 +153,44 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position: GeolocationPosition) => {
           const { latitude, longitude, heading, speed } = position.coords;
-          const providerLocation = {
-            lat: latitude,
-            lng: longitude
-          };
+          const currentPosition = new google.maps.LatLng(latitude, longitude);
 
           // Update marker position and rotation
-          positionMarker.setPosition(providerLocation);
+          positionMarker.position = currentPosition;
           if (heading !== null) {
-            const icon = positionMarker.getIcon() as google.maps.Symbol;
-            icon.rotation = heading;
-            positionMarker.setIcon(icon);
+            const content = positionMarker.content as HTMLElement;
+            const arrowElement = content.querySelector('.navigation-arrow') as HTMLDivElement;
+
+            let newHeading = heading;
+            if (prevHeading !== null) {
+              const headingDiff = Math.abs(heading - prevHeading);
+              if (headingDiff > HEADING_THRESHOLD) {
+                newHeading = smoothHeading(heading, prevHeading);
+                if (arrowElement) {
+                  arrowElement.style.transform = `rotate(${newHeading}deg)`;
+                }
+                if (speed && speed > 2) {
+                  map.setHeading(newHeading);
+                }
+              }
+            }
+            setPrevHeading(newHeading);
           }
 
-          // Rotate map to match heading if in navigation mode
-          if (heading !== null && speed && speed > 1) { // Only rotate when moving
-            map.setHeading(heading);
+          // Handle map position updates
+          if (prevPosition) {
+            const distance = calculateDistance(currentPosition, prevPosition);
+            if (distance > POSITION_THRESHOLD) {
+              map.panTo({
+                lat: currentPosition.lat() * 0.7 + prevPosition.lat() * 0.3,
+                lng: currentPosition.lng() * 0.7 + prevPosition.lng() * 0.3
+              });
+              setPrevPosition(currentPosition);
+            }
+          } else {
+            setPrevPosition(currentPosition);
+            map.panTo(currentPosition);
           }
-
-          // Update camera position smoothly
-          map.panTo(providerLocation);
 
           // Send location update through socket
           socket.emit('location:update', {
@@ -141,7 +204,7 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
           const directionsService = new google.maps.DirectionsService();
           directionsService.route(
             {
-              origin: providerLocation,
+              origin: { lat: latitude, lng: longitude },
               destination: {
                 lat: requesterLocation.coordinates[1],
                 lng: requesterLocation.coordinates[0]
@@ -163,7 +226,21 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
         }
       );
     }
-  }, [map, directionsRenderer, positionMarker, isLoaded, requesterLocation, socket, serviceRequestId]);
+
+    return () => {
+      if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+    }
+  }, [map,
+    directionsRenderer,
+    positionMarker,
+    isLoaded,
+    requesterLocation,
+    socket,
+    serviceRequestId,
+    prevPosition,
+    prevHeading]);
 
   if (!isLoaded) {
     return (
@@ -183,7 +260,7 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-              // onClick={onCallUser}
+            // onClick={onCallUser}
             >
               <Phone className="mr-2 h-4 w-4" />
               Call User
