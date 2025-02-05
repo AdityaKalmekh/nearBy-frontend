@@ -4,11 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Phone, CheckCircle, Check } from "lucide-react";
 import { Socket } from 'socket.io-client';
 import { useLoadScript } from '@react-google-maps/api';
-
 export interface Location {
   coordinates: [number, number]; // [longitude, latitude]
 }
-
 interface ProviderMapProps {
   requesterLocation: Location;
   onStartService: () => void;
@@ -33,19 +31,19 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const [positionMarker, setPositionMarker] = useState<google.maps.marker.AdvancedMarkerElement | null>(null);
   const watchIdRef = useRef<number | null>(null);
-  const [prevPosition, setPrevPosition] = useState<google.maps.LatLng | null>(null);
-  const [prevHeading, setPrevHeading] = useState<number | null>(null);
+  const lastUpdatedRef = useRef<number>(0);
+  const currentPositionRef = useRef<google.maps.LatLngLiteral | null>(null);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries: ['places', 'marker'],
   });
 
-  const HEADING_THRESHOLD = 5; // degrees
-  const POSITION_THRESHOLD = 5; // meters
+  const UPDATE_INTERVAL = 1000;
+  const ROUTE_UPDATE_INTERVAL = 5000;
 
   // Create custom navigation arrow element
-  const createNavigationArrow = useCallback(() => {
+  const createProviderMarker = useCallback(() => {
     const arrow = document.createElement('div');
     arrow.innerHTML = `
       <div class="navigation-arrow" style="
@@ -72,44 +70,61 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
     return arrow;
   }, []);
 
-  // Calculate distance between two points
-  const calculateDistance = (p1: google.maps.LatLng, p2: google.maps.LatLng) => {
-    return google.maps.geometry.spherical.computeDistanceBetween(p1, p2);
+  const smoothPanTo = (map: google.maps.Map, position: google.maps.LatLngLiteral) => {
+    map.panTo(position);
   };
 
-  // Smooth out heading changes
-  const smoothHeading = (newHeading: number, prevHeading: number) => {
-    let diff = ((newHeading - prevHeading + 360) % 360);
-    if (diff > 180) diff -= 360;
-    return prevHeading + diff * 0.3; // Apply dampening factor
+  const calculateDistance = (p1: google.maps.LatLngLiteral, p2: google.maps.LatLngLiteral) => {
+    const lat1 = p1.lat * Math.PI / 180;
+    const lat2 = p2.lat * Math.PI / 180;
+    const lng1 = p1.lng * Math.PI / 180;
+    const lng2 = p2.lng * Math.PI / 180;
+
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = lat1;
+    const φ2 = lat2;
+    const Δφ = (lat2 - lat1);
+    const Δλ = (lng2 - lng1);
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) *
+      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
   };
+
+  const createRequesterMarker = useCallback(() => {
+    const pin = document.createElement('div');
+    pin.innerHTML = `
+      <div style="
+        width: 24px;
+        height: 24px;
+        background-color: #DC2626;
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+      "></div>
+    `;
+    return pin;
+  }, []);
 
   const mapOptions = useMemo<google.maps.MapOptions>(() => ({
     disableDefaultUI: true,
-    clickableIcons: true,
+    clickableIcons: false,
     scrollwheel: true,
     zoomControl: true,
     center: {
       lat: requesterLocation.coordinates[1],
       lng: requesterLocation.coordinates[0]
     },
-    zoom: 15,
-    heading: 0,
-    tilt: 45,
-    mapId: 'navigation_map'
+    zoom: 16,
+    tilt: 0,
+    mapId: 'navigation_map',
+    gestureHandling: 'cooperative',
+    minZoom: 12,
+    maxZoom: 20
   }), [requesterLocation]);
-
-  // const createNavigationArrow = useCallback(() => {
-  //   return {
-  //     path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-  //     scale: 8,
-  //     fillColor: '#4285F4', // Google Maps blue
-  //     fillOpacity: 1,
-  //     strokeColor: '#FFFFFF',
-  //     strokeWeight: 2,
-  //     rotation: 0 // Will be updated with actual heading
-  //   };
-  // }, []);
 
   useEffect(() => {
     if (!isLoaded || !mapRef.current) return;
@@ -120,127 +135,123 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
       suppressMarkers: true,
       polylineOptions: {
         strokeColor: '#4285F4',
-        strokeWeight: 5,
-        strokeOpacity: 0.8
+        strokeWeight: 5
       }
     });
 
-    // Initialize position marker with navigation arrow
-    const marker = new google.maps.marker.AdvancedMarkerElement({
+    const provider = new google.maps.marker.AdvancedMarkerElement({
       map: newMap,
-      content: createNavigationArrow(),
-      position: newMap.getCenter(), // Keep arrow above other elements
-      zIndex: 2 // Better performance for frequent updates
+      content: createProviderMarker(),
+      position: newMap.getCenter(),
+      zIndex: 2
+    });
+
+
+    // Create requester marker directly without storing in state
+    new google.maps.marker.AdvancedMarkerElement({
+      map: newMap,
+      content: createRequesterMarker(),
+      position: {
+        lat: requesterLocation.coordinates[1],
+        lng: requesterLocation.coordinates[0]
+      },
+      zIndex: 1
     });
 
     setMap(newMap);
     setDirectionsRenderer(renderer);
-    setPositionMarker(marker);
+    setPositionMarker(provider);
 
     return () => {
       if (watchIdRef.current) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
-  }, [isLoaded, mapOptions, createNavigationArrow]);
+  }, [createProviderMarker, createRequesterMarker, isLoaded, mapOptions, requesterLocation.coordinates]);
 
   useEffect(() => {
     if (!map || !directionsRenderer || !positionMarker || !isLoaded) return;
 
     if (!socket) return;
 
-    if ("geolocation" in navigator) {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        (position: GeolocationPosition) => {
-          const { latitude, longitude, heading, speed } = position.coords;
-          const currentPosition = new google.maps.LatLng(latitude, longitude);
+    const updateMapAndMarker = (position: GeolocationPosition) => {
+      const now = Date.now();
+      if (now - lastUpdatedRef.current < UPDATE_INTERVAL) return;
 
-          // Update marker position and rotation
-          positionMarker.position = currentPosition;
-          if (heading !== null) {
-            const content = positionMarker.content as HTMLElement;
-            const arrowElement = content.querySelector('.navigation-arrow') as HTMLDivElement;
+      const { latitude, longitude, heading } = position.coords;
+      const newPosition = { lat: latitude, lng: longitude };
 
-            let newHeading = heading;
-            if (prevHeading !== null) {
-              const headingDiff = Math.abs(heading - prevHeading);
-              if (headingDiff > HEADING_THRESHOLD) {
-                newHeading = smoothHeading(heading, prevHeading);
-                if (arrowElement) {
-                  arrowElement.style.transform = `rotate(${newHeading}deg)`;
-                }
-                if (speed && speed > 2) {
-                  map.setHeading(newHeading);
-                }
-              }
-            }
-            setPrevHeading(newHeading);
-          }
+      // Only update if we've moved more than 10 meters
+      if (currentPositionRef.current) {
+        const distance = calculateDistance(currentPositionRef.current, newPosition);
+        if (distance < 10) return; // Skip update if movement is too small
+      }
 
-          // Handle map position updates
-          if (prevPosition) {
-            const distance = calculateDistance(currentPosition, prevPosition);
-            if (distance > POSITION_THRESHOLD) {
-              map.panTo({
-                lat: currentPosition.lat() * 0.7 + prevPosition.lat() * 0.3,
-                lng: currentPosition.lng() * 0.7 + prevPosition.lng() * 0.3
-              });
-              setPrevPosition(currentPosition);
-            }
-          } else {
-            setPrevPosition(currentPosition);
-            map.panTo(currentPosition);
-          }
+      currentPositionRef.current = newPosition;
 
-          // Send location update through socket
-          socket.emit('location:update', {
-            serviceRequestId,
-            location: {
-              coordinates: [position.coords.longitude, position.coords.latitude]
-            }
-          });
+      // Update marker position smoothly
+      positionMarker.position = newPosition;
 
-          // Update directions
-          const directionsService = new google.maps.DirectionsService();
-          directionsService.route(
-            {
-              origin: { lat: latitude, lng: longitude },
-              destination: {
-                lat: requesterLocation.coordinates[1],
-                lng: requesterLocation.coordinates[0]
-              },
-              travelMode: google.maps.TravelMode.DRIVING
-            },
-            (result, status) => {
-              if (status === 'OK' && result) {
-                directionsRenderer.setDirections(result);
-              }
-            }
-          );
-        },
-        (error: GeolocationPositionError) => console.error("Error getting location:", error),
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
+      // Update arrow rotation
+      if (heading !== null) {
+        const content = positionMarker.content as HTMLElement;
+        const arrow = content.querySelector('.navigation-arrow') as HTMLDivElement;
+        if (arrow) {
+          arrow.style.transform = `rotate(${heading}deg)`;
         }
-      );
-    }
+      }
+
+      // Smooth map movement
+      smoothPanTo(map, newPosition);
+
+      // Update route
+      if (now - lastUpdatedRef.current > ROUTE_UPDATE_INTERVAL) {
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route({
+          origin: newPosition,
+          destination: {
+            lat: requesterLocation.coordinates[1],
+            lng: requesterLocation.coordinates[0]
+          },
+          travelMode: google.maps.TravelMode.DRIVING
+        }, (result, status) => {
+          if (status === 'OK' && result) {
+            directionsRenderer.setDirections(result);
+          }
+        });
+        lastUpdatedRef.current = now;
+      }
+
+      // Send location update
+      socket.emit('location:update', {
+        serviceRequestId,
+        location: {
+          coordinates: [longitude, latitude],
+          heading: heading || 0
+        }
+      });
+
+      lastUpdatedRef.current = now;
+    };
+
+    // if ("geolocation" in navigator) {
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      updateMapAndMarker,
+      (error: GeolocationPositionError) => console.error("Error getting location:", error),
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 2000
+      }
+    );
+    // }
 
     return () => {
       if (watchIdRef.current) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
     }
-  }, [map,
-    directionsRenderer,
-    positionMarker,
-    isLoaded,
-    requesterLocation,
-    socket,
-    serviceRequestId,
-    prevPosition,
-    prevHeading]);
+  }, [map, directionsRenderer, positionMarker, isLoaded, requesterLocation, socket, serviceRequestId]);
 
   if (!isLoaded) {
     return (
