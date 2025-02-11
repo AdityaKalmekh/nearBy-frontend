@@ -40,7 +40,7 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
   });
 
   const UPDATE_INTERVAL = 1000;
-  // const ROUTE_UPDATE_INTERVAL = 5000;
+  const ROUTE_UPDATE_INTERVAL = 5000;
 
   // Create custom navigation arrow element
   const createProviderMarker = useCallback(() => {
@@ -146,7 +146,6 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
       zIndex: 2
     });
 
-
     // Create requester marker directly without storing in state
     new google.maps.marker.AdvancedMarkerElement({
       map: newMap,
@@ -205,44 +204,44 @@ const ProviderMap: React.FC<ProviderMapProps> = ({
       smoothPanTo(map, newPosition);
 
       // Update route
-      // if (now - lastUpdatedRef.current > ROUTE_UPDATE_INTERVAL) {
-      const directionsService = new google.maps.DirectionsService();
-      directionsService.route({
-        origin: newPosition,
-        destination: {
-          lat: requesterLocation.coordinates[1],
-          lng: requesterLocation.coordinates[0]
-        },
-        travelMode: google.maps.TravelMode.DRIVING,
-        optimizeWaypoints: true,
-        drivingOptions: {
-          departureTime: new Date(),
-          trafficModel: google.maps.TrafficModel.BEST_GUESS
-        }
-      }, (result, status) => {
-        if (status === 'OK' && result) {
-          // Set the new route
-          directionsRenderer.setDirections(result);
-
-          // Smooth map movement
-          const bounds = new google.maps.LatLngBounds();
-          bounds.extend(newPosition);
-          bounds.extend({
+      if (now - lastUpdatedRef.current > ROUTE_UPDATE_INTERVAL) {
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route({
+          origin: newPosition,
+          destination: {
             lat: requesterLocation.coordinates[1],
             lng: requesterLocation.coordinates[0]
-          });
+          },
+          travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: true,
+          drivingOptions: {
+            departureTime: new Date(),
+            trafficModel: google.maps.TrafficModel.BEST_GUESS
+          }
+        }, (result, status) => {
+          if (status === 'OK' && result) {
+            // Set the new route
+            directionsRenderer.setDirections(result);
 
-          // Adjust map view to show full route
-          map.fitBounds(bounds, {
-            top: 50,
-            right: 50,
-            bottom: 50,
-            left: 50
-          });
-        }
-      });
-      // lastUpdatedRef.current = now;
-      // }
+            // Smooth map movement
+            const bounds = new google.maps.LatLngBounds();
+            bounds.extend(newPosition);
+            bounds.extend({
+              lat: requesterLocation.coordinates[1],
+              lng: requesterLocation.coordinates[0]
+            });
+
+            // Adjust map view to show full route
+            map.fitBounds(bounds, {
+              top: 50,
+              right: 50,
+              bottom: 50,
+              left: 50
+            });
+          }
+        });
+        lastUpdatedRef.current = now;
+      }
 
       // Send location update
       socket.emit('location:update', {

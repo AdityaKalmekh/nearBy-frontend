@@ -57,6 +57,7 @@ const Page = () => {
             </div>
         );
     }
+    
     const dummyData = Array(15).fill(0).map((_, index) => ({
         id: index + 1,
         date: 'Dec 29, 2024 14:30',
