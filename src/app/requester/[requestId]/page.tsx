@@ -48,6 +48,7 @@ const Page = () => {
                     method: "GET",
                 }, (response) => {
                     const providerDetails = response as ProviderInfo;
+                    console.log(providerDetails);
                     if(providerDetails) {
                         setProvider(providerDetails);
                         resolve(true);
