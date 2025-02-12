@@ -20,9 +20,6 @@ export const RequesterTracking: React.FC<Props> = ({
     const [providerMarker, setProviderMarker] = useState<google.maps.Marker | null>(null);
     const [requesterMarker, setRequesterMarker] = useState<google.maps.Marker | null>(null);
     const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
-
-    console.log({ provider });
-    console.log({ providerLocation });
     
     useEffect(() => {
         if (!mapRef.current) return;
@@ -74,8 +71,11 @@ export const RequesterTracking: React.FC<Props> = ({
     }, [provider.reqLocation.coordinates]);
 
     useEffect(() => {
-        if (!map || !providerMarker || !requesterMarker || !directionsRenderer || !providerLocation) return;
-
+        if (!map || !providerMarker || !requesterMarker || !directionsRenderer || !providerLocation || !provider) return;
+        
+        console.log(provider);
+        console.log(providerLocation);
+        
         const providerPosition = {
             lat: providerLocation.coordinates[1] || provider.prvLocation.coordinates[1] ,
             lng: providerLocation.coordinates[0] || provider.prvLocation.coordinates[0]
