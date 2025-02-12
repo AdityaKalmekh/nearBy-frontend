@@ -96,7 +96,7 @@ export const RequesterTracking: React.FC<Props> = ({
                 directionsRenderer.setDirections(result);
             }
         });
-    }, [providerLocation, map, providerMarker, requesterMarker, directionsRenderer])
+    }, [providerLocation, map, providerMarker, requesterMarker, directionsRenderer, provider])
 
     const handleSendMessage = () => {
         console.log({ message });
