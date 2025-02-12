@@ -39,7 +39,7 @@ const Page = () => {
         }
         return () => clearInterval(interval);
     }, [state.timer]);
-
+    
     if (loading) {
         return (
             <div className="min-h-screen bg-white relative">
