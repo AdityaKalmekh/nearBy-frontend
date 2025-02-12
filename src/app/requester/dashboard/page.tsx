@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useMemo, useState } from 'react';
-import { GoogleMap, Marker } from '@react-google-maps/api';
+import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import {
     Select,
     SelectContent,
@@ -30,7 +30,7 @@ const INITIAL_SERVICES: Service[] = [
     'Cleaning'
 ];
 
-// const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
+const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 interface Location {
     lat: number,
     lng: number
@@ -46,10 +46,10 @@ const Page = () => {
 
     useRequesterSocket(userId, setError);
 
-    // const { isLoaded } = useLoadScript({
-    //     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    //     libraries: ['places'],
-    // });
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        libraries: ['places']
+    });
 
     const mapCenter = useMemo(() =>
         location ? { lat: location.lat, lng: location.lng } : { lat: 20, lng: 0 },
@@ -62,7 +62,7 @@ const Page = () => {
         scrollwheel: true,
     }), []);
 
-    if (loading) {
+    if (loading || !isLoaded) {
         return (
             <div className="min-h-screen bg-white relative">
                 <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">

@@ -7,6 +7,7 @@ import { useRequesterSocket } from "@/app/hooks/useRequesterSocket";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuthContext } from "@/contexts/auth-context";
+import { useLoadScript } from "@react-google-maps/api";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ export interface ProviderInfo {
     prvLocation: Location;  
 }
 
+const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 const Page = () => {
     const { requestId } = useParams();
     const { userId } = useAuthContext();
@@ -32,6 +34,11 @@ const Page = () => {
     const [provider, setProvider] = useState<ProviderInfo>();
     const { providerLocation } = useRequesterSocket(userId, setSocketError);
     const router = useRouter();
+
+    const { isLoaded } = useLoadScript({
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+        libraries: ['places'],
+    });
 
     useEffect(() => {
         const fetchProviderDetails = async () => {
@@ -54,7 +61,7 @@ const Page = () => {
         }
     }, [requestId, sendRequest]);
 
-    if (isLoading) {
+    if (isLoading || !isLoaded) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <Card className="w-full max-w-md mx-4">
