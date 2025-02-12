@@ -21,6 +21,9 @@ export const RequesterTracking: React.FC<Props> = ({
     const [requesterMarker, setRequesterMarker] = useState<google.maps.Marker | null>(null);
     const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
 
+    console.log({ provider });
+    console.log({ providerLocation });
+    
     useEffect(() => {
         if (!mapRef.current) return;
         // const initialLocation = { lat: 23.0225, lng: 72.5714 }
@@ -74,8 +77,8 @@ export const RequesterTracking: React.FC<Props> = ({
         if (!map || !providerMarker || !requesterMarker || !directionsRenderer || !providerLocation) return;
 
         const providerPosition = {
-            lat: providerLocation.coordinates[1] ,
-            lng: providerLocation.coordinates[0] 
+            lat: providerLocation.coordinates[1] || provider.prvLocation.coordinates[1] ,
+            lng: providerLocation.coordinates[0] || provider.prvLocation.coordinates[0]
         };
 
         // Update provider marker
@@ -93,7 +96,7 @@ export const RequesterTracking: React.FC<Props> = ({
                 directionsRenderer.setDirections(result);
             }
         });
-    }, [providerLocation, map, providerMarker, requesterMarker, directionsRenderer, provider])
+    }, [providerLocation, map, providerMarker, requesterMarker, directionsRenderer])
 
     const handleSendMessage = () => {
         console.log({ message });
