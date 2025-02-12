@@ -44,7 +44,7 @@ const Page = () => {
         const fetchProviderDetails = async () => {
             return new Promise ((resolve) => {
                 sendRequest({
-                    url: `/request/provider-details/${requestId}`,
+                    url: `request/provider-details/${requestId}`,
                     method: "GET",
                 }, (response) => {
                     const providerDetails = response as ProviderInfo;
