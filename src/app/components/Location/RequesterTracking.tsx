@@ -21,9 +21,13 @@ export const RequesterTracking: React.FC<Props> = ({
     const [requesterMarker, setRequesterMarker] = useState<google.maps.Marker | null>(null);
     const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
     
+    console.log("Provider location ", provider);
+    
     useEffect(() => {
         if (!mapRef.current) return;
         // const initialLocation = { lat: 23.0225, lng: 72.5714 }
+        console.log("Requester location ", provider.reqLocation.coordinates);
+        
         const mapInstance = new google.maps.Map(mapRef.current, {
             zoom: 15,
             center: {
