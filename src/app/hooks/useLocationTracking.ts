@@ -27,6 +27,7 @@ export const useLocationTracking = (providerId: string | undefined) => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/start/${providerId}`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -55,6 +56,7 @@ export const useLocationTracking = (providerId: string | undefined) => {
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/stop/${providerId}`, {
                 method: 'POST',
+                credentials: 'include'
             });
 
             const data: TrackingApiResponse = await response.json();
@@ -79,6 +81,7 @@ export const useLocationTracking = (providerId: string | undefined) => {
             const currentLocation = await getLocation();
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/provider/location/update/${providerId}`, {
                 method: 'PATCH',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },

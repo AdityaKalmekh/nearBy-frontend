@@ -56,8 +56,6 @@ export const useProviderSocket = (providerId: string | undefined) => {
     const [accepted, setAccepted] = useState<boolean>(false);
     const { sendRequest } = useHttp();
     const socketRef = useRef<Socket | null>(null);
-
-    console.log(activeRequest);
     
     const getRequesterDetails = useCallback(async (requestId: string) => {
         try {
