@@ -14,7 +14,7 @@ const HomeServicesSection = () => {
             <div className="container mx-auto px-6 md:px-8 pt-16 md:pt-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                     {/* Left Section */}
-                    <div className="max-w-md mx-auto md:mx-0 md:ml-12 w-full text-center md:text-left">
+                    <div className="order-2 md:order-1 max-w-md mx-auto md:mx-0 md:ml-12 w-full text-center md:text-left">
                         <h1 className="text-5xl font-bold text-gray-900 mb-12">
                             Get services<br />anywhere .
                         </h1>
@@ -62,7 +62,7 @@ const HomeServicesSection = () => {
                     </div>
 
                     {/* Right Section - Services Illustration */}
-                    <div className="flex justify-center md:justify-end">
+                    <div className="order-1 md:order-2 flex justify-center md:justify-end">
                         <div className="relative w-[90%] md:w-[100%] aspect-[4/3]">
                             <Image
                                 src={logo}
