@@ -12,7 +12,8 @@ export interface Location {
 
 export const useRequesterSocket = (
     requesterId: string | undefined,
-    setError: (error: string | null) => void
+    setError?: (error: string | null) => void,
+    setIsLoading?: ((arg0: boolean) => void) | null
 ) => {
     const router = useRouter();
     const [providerLocation, setProviderLocation] = useState<Location | null>(null);
@@ -41,7 +42,8 @@ export const useRequesterSocket = (
                     });
                     router.push(`${requestId}`);
                 } else if (status === 'NO_PROVIDER') {
-                    setError('No providers available in your region');
+                    setError?.('No providers available in your region hlo');
+                    setIsLoading?.(false);
                 }
             });
 
@@ -59,7 +61,7 @@ export const useRequesterSocket = (
                 socket.off('new:request');
             };
         }
-    }, [requesterId, router, setError]);
+    }, [requesterId, router, setError, setIsLoading]);
 
     return { providerLocation };
 }
