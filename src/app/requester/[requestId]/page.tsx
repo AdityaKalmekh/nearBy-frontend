@@ -30,9 +30,9 @@ const Page = () => {
     const { requestId } = useParams();
     const { userId } = useAuthContext();
     const { error, sendRequest, isLoading } = useHttp<ProviderInfo>();
-    const [socketError, setSocketError] = useState<string | null>(null);
+    // const [socketError, setSocketError] = useState<string | null>(null);
     const [provider, setProvider] = useState<ProviderInfo>();
-    const { providerLocation } = useRequesterSocket(userId, setSocketError);
+    const { providerLocation } = useRequesterSocket(userId);
     const router = useRouter();
 
     const { isLoaded } = useLoadScript({
@@ -95,7 +95,7 @@ const Page = () => {
     }
 
     console.log({ error });
-    console.log({ socketError });
+    // console.log({ socketError });
 
     return (
         < RequesterTracking

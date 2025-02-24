@@ -42,7 +42,7 @@ export const useRequesterSocket = (
                     });
                     router.push(`${requestId}`);
                 } else if (status === 'NO_PROVIDER') {
-                    setError?.('No providers available in your region hlo');
+                    setError?.('No providers available in your region');
                     setIsLoading?.(false);
                 }
             });

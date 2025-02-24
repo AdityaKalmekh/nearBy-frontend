@@ -14,7 +14,7 @@ interface Location {
     lng: number,
 }
 
-export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Location) => void }) => {
+export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocation: (location: Location) => void, setRequestError: (err: string | null) => void }) => {
     const {
         ready,
         value,
@@ -131,6 +131,7 @@ export const PlacesAutocomplete = ({ setLocation }: { setLocation: (location: Lo
                     setValue(e.target.value);
                     setShowSuggestions(true);
                     setError(null);
+                    setRequestError(null);
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onKeyDown={handleKeyDown}

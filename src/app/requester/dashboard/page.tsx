@@ -11,13 +11,15 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlacesAutocomplete } from '@/app/components/ui/places-autocomplete';
 import { Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useRequesterSocket } from '@/app/hooks/useRequesterSocket';
 import { useAuthContext } from '@/contexts/auth-context';
+import VisitingChargeModal from '@/app/components/modal/VisitingCharge';
+import useHttp from '@/app/hooks/use-http';
 
 type Service = string;
 
@@ -36,15 +38,22 @@ interface Location {
     lng: number
 }
 
+interface AvailabilityResponse {
+    Availability: boolean
+}
+
 const Page = () => {
     const { loading, userId } = useAuthContext();
-    const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
-    const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+    // const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
+    // const [selectedServices, setSelectedServices] = useState<Service[]>([]);
+    const [selectedService, setSelectedService] = useState<string>();
     const [location, setLocation] = useState<Location | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const { sendRequest } = useHttp();
 
-    useRequesterSocket(userId, setError);
+    useRequesterSocket(userId, setError, setIsLoading);
 
     const { isLoaded } = useLoadScript({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
@@ -73,33 +82,37 @@ const Page = () => {
     }
 
     const handleServiceSelect = (service: string) => {
-        setSelectedServices(prev => [...prev, service]);
-        setAvailableServices(prev => prev.filter(s => s !== service));
+        // setSelectedServices(prev => [...prev, service]);
+        // setAvailableServices(prev => prev.filter(s => s !== service));
+        setError(null);
+        setSelectedService(service);
     };
 
-    const handleServiceRemove = (service: Service) => {
-        setSelectedServices(prev => prev.filter(s => s !== service));
-        setAvailableServices(prev => [...prev, service].sort());
-    };
+    // const handleServiceRemove = (service: Service) => {
+    //     setSelectedServices(prev => prev.filter(s => s !== service));
+    //     setAvailableServices(prev => [...prev, service].sort());
+    // };
 
     // if (!isLoaded) {
     //     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     // }
 
-    const handleSubmit = async () => {
+    const handleContinue = async () => {
         setIsLoading(true);
         setError(null);
+        onClose();
 
         const requestData = {
             longitude: location?.lng,
             latitude: location?.lat,
             userId,
-            services: selectedServices,
+            // services: selectedServices,
         }
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/request/provider`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -112,15 +125,47 @@ const Page = () => {
                 setIsLoading(true);
             } else {
                 setError('No providers available in your region at this moment.');
+                setIsLoading(false);
             }
         } catch (err) {
             console.log(err);
             setError('Failed to submit request. Please try again.');
         }
-        // finally {
-        //     setIsLoading(false);
-        // }
     };
+
+    const viewPrices = () => {
+        const requestData = {
+            longitude: location?.lng,
+            latitude: location?.lat,
+            userId,
+            // services: selectedServices,
+        }
+
+        return new Promise((resolve, reject) => {
+            sendRequest({
+                url: '/providersAvailability',
+                method: 'POST',
+                data: requestData
+            }, (response) => {
+                const requestResponse = response as AvailabilityResponse;
+                if (requestResponse.Availability) {
+                    setModalOpen(true);
+                } else {
+                    setError('No providers available in your region at this moment.');
+                    setIsLoading(false);
+                }
+                resolve(true);
+            },
+                (error) => {
+                    reject(error);
+                }
+            );
+        });
+    }
+
+    const onClose = () => {
+        setModalOpen(false);
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
@@ -131,7 +176,10 @@ const Page = () => {
                 <CardContent className="space-y-4">
                     {/* Location Search */}
                     <div className="space-y-4">
-                        <PlacesAutocomplete setLocation={setLocation} />
+                        <PlacesAutocomplete 
+                            setLocation={setLocation} 
+                            setRequestError={setError}    
+                        />
 
                         {/* Map Container */}
                         <div className="w-full h-64 rounded-lg overflow-hidden">
@@ -156,8 +204,13 @@ const Page = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
-                                    {availableServices.map((service) => (
+                                    {/* {availableServices.map((service) => (
                                         <SelectItem key={service} value={service}>
+                                            {service}
+                                        </SelectItem>
+                                    ))} */}
+                                    {INITIAL_SERVICES.map((service) => (
+                                        <SelectItem key={service} value={service} >
                                             {service}
                                         </SelectItem>
                                     ))}
@@ -167,7 +220,7 @@ const Page = () => {
                     </div>
 
                     {/* Selected Services */}
-                    <div className="flex flex-wrap gap-2">
+                    {/* <div className="flex flex-wrap gap-2">
                         {selectedServices.map((service) => (
                             <Badge
                                 key={service}
@@ -184,7 +237,7 @@ const Page = () => {
                                 </button>
                             </Badge>
                         ))}
-                    </div>
+                    </div> */}
 
                     {error && (
                         <Alert variant="destructive">
@@ -195,8 +248,9 @@ const Page = () => {
                     {/* Submit Button */}
                     <Button
                         className="w-full"
-                        disabled={selectedServices.length === 0 || isLoading || !location}
-                        onClick={handleSubmit}
+                        // disabled={selectedServices.length === 0 || isLoading || !location}
+                        disabled={!selectedService || isLoading || !location}
+                        onClick={viewPrices}
                     >
                         {isLoading ? (
                             <>
@@ -204,11 +258,20 @@ const Page = () => {
                                 Finding Provider...
                             </>
                         ) : (
-                            'Submit Request'
+                            'View Price'
                         )}
                     </Button>
+                    {/* <Button> See Prices </Button> */}
                 </CardContent>
             </Card>
+            {selectedService && (
+                <VisitingChargeModal
+                    isOpen={modalOpen}
+                    onClose={onClose}
+                    selectedService={selectedService}
+                    handleContinue={handleContinue}
+                />
+            )}
         </div>
     );
 };
