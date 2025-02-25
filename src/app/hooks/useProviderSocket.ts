@@ -12,7 +12,7 @@ interface RequestDisplay {
     requestId: string,
     firstName: string,
     lastName: string,
-    phoneNo?:  string,
+    phoneNo?: string,
     email?: string,
     reqLocation: Location
 }
@@ -56,7 +56,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
     const [accepted, setAccepted] = useState<boolean>(false);
     const { sendRequest } = useHttp();
     const socketRef = useRef<Socket | null>(null);
-    
+
     const getRequesterDetails = useCallback(async (requestId: string) => {
         try {
             return new Promise((resolve, reject) => {
@@ -65,7 +65,6 @@ export const useProviderSocket = (providerId: string | undefined) => {
                     method: 'GET'
                 },
                     (response) => {
-                        console.log('Requester details:', response);
                         resolve(response);
                     },
                     (error) => {
@@ -98,7 +97,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
                     userId: providerId,
                     userType: 'provider'
                 });
-           
+
                 const requesterDetails = await getRequesterDetails(requestId)
 
                 // Only update state if component is still mounted
@@ -171,6 +170,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
         try {
             await fetch(`${process.env.NEXT_PUBLIC_BACKEND_BASE_URL}/request/response`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     requestId: activeRequest.requestId,
