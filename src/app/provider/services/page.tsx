@@ -6,7 +6,7 @@ import { LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { Wrench, Zap, Paintbrush, Car, Home, Plus, Hammer } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import VisitingChargeModal from "@/app/components/modal/VisitingChargeModal";
+// import VisitingChargeModal from "@/app/components/modal/VisitingChargeModal";
 import { useLocation } from "@/app/hooks/useLocation";
 import { LocationStatus } from "@/app/components/Location/LocationStatus";
 import { Loader2 } from 'lucide-react';
@@ -25,9 +25,13 @@ interface ServiceCardProps {
     selected: boolean;
     onServiceClick: () => void;
 }
+// export interface SelectedServiceItem {
+//     serviceType: string,
+//     visitingCharge: number
+// }
+
 export interface SelectedServiceItem {
-    serviceType: string,
-    visitingCharge: number
+    serviceType: string
 }
 
 const ServiceCard: React.FC<ServiceCardProps> = ({
@@ -56,15 +60,15 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             </div>
         </CardContent>
     </Card>
-);
+)
 
 const Page: React.FC = () => {
     const [selectedServices, setSelectedServices] = useState<SelectedServiceItem[]>([]);
-    const [modalOpen, setModalOpen] = useState(false);
-    const [currentService, setCurrentService] = useState<string>('');
+    // const [modalOpen, setModalOpen] = useState(false);
+    // const [currentService, setCurrentService] = useState<string>('');
     const { error, isLoading, registerProvider } = useAuthContext();
     const router = useRouter();
-    
+
     const {
         getLocation,
         location,
@@ -81,32 +85,40 @@ const Page: React.FC = () => {
         { icon: Home, serviceType: 'Cleaning' },
     ];
 
-    const handleServiceClick = (service: string) => {
-        setCurrentService(service);
-        setModalOpen(true);
-    };
-
-    const handleSaveVisitingCharge = (charge: number) => {
+    const handleServiceClick = (selectedService: string) => {
+        // setCurrentService(service);
+        // setModalOpen(true);
         setSelectedServices(prevSelected => {
-            const existingService = prevSelected.find(service => service.serviceType === currentService);
+            const existingService = prevSelected.find(service => service.serviceType === selectedService);
             return existingService
-                ? prevSelected.map(service =>
-                    service.serviceType === currentService
-                        ? { ...service, visitingCharge: charge }
-                        : service
-                )
+                ? prevSelected.filter(service => service.serviceType !== selectedService)
                 : [...prevSelected, {
-                    serviceType: currentService,
-                    visitingCharge: charge
+                    serviceType: selectedService
                 }];
         });
-        setModalOpen(false);
     };
+
+    // const handleSaveVisitingCharge = (charge: number) => {
+    //     setSelectedServices(prevSelected => {
+    //         const existingService = prevSelected.find(service => service.serviceType === currentService);
+    //         return existingService
+    //             ? prevSelected.map(service =>
+    //                 service.serviceType === currentService
+    //                     ? { ...service, visitingCharge: charge }
+    //                     : service
+    //             )
+    //             : [...prevSelected, {
+    //                 serviceType: currentService,
+    //                 visitingCharge: charge
+    //             }];
+    //     });
+    //     setModalOpen(false);
+    // };
 
     const handleContinue = async () => {
         const locationDetails = await getLocation();
         const response = await registerProvider(selectedServices, locationDetails);
-        if (response){
+        if (response) {
             router.push('/provider/dashboard');
         }
     }
@@ -196,12 +208,12 @@ const Page: React.FC = () => {
                 </div>
             </main>
 
-            <VisitingChargeModal
+            {/* <VisitingChargeModal
                 isOpen={modalOpen}
                 onClose={() => setModalOpen(false)}
                 selectedService={currentService}
                 onSave={handleSaveVisitingCharge}
-            />
+            /> */}
         </div>
     )
 }
