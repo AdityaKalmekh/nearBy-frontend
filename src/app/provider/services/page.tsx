@@ -29,7 +29,6 @@ interface ServiceCardProps {
 //     serviceType: string,
 //     visitingCharge: number
 // }
-
 export interface SelectedServiceItem {
     serviceType: string
 }
