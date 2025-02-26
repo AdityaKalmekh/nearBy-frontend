@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 // Define public paths that don't need authentication
 const publicPaths = [
-    '/OtpVerification',
+    '/verification',
     '/',
     '/api/auth',
     '/favicon.ico'
@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
 
     // Check if trying to access dashboard or other protected routes
     const isProtectedRoute = pathname.includes('/dashboard') ||
-        pathname.includes('/services') ||
+        pathname.includes('/services') || pathname.includes('/signup') ||
         (pathname.startsWith('/provider/') && pathname !== '/provider') ||
         (pathname.startsWith('/requester/') && pathname !== '/requester');
 
