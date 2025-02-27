@@ -186,7 +186,7 @@ const Page = () => {
                             <PlacesAutocomplete
                                 setLocation={setLocation}
                                 setRequestError={setError}
-                                // location={location}
+                                location={location}
                             />
                         </div>
                         <div className="space-y-2">

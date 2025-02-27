@@ -18,13 +18,13 @@ interface Location {
 interface PlacesAutocompleteProps {
     setLocation: (location: Location) => void;
     setRequestError: (err: string | null) => void;
-    // location: string;
+    location: Location | null;
 }
 
 export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     setLocation,
     setRequestError,
-    // location
+    location
 }) => {
     const {
         ready,
@@ -162,7 +162,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                     role="listbox"
                 >
                     {/* Your location option */}
-                    {showSuggestions && status !== "OK" && (
+                    {showSuggestions && status !== "OK" && !location &&(
                         <li
                             ref={(el: HTMLLIElement | null) => {
                                 suggestionRefs.current[0] = el
