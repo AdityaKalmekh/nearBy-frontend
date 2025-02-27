@@ -16,7 +16,7 @@ const HomeServicesSection = () => {
                     {/* Left Section */}
                     <div className="order-2 md:order-1 max-w-md mx-auto md:mx-0 md:ml-12 w-full text-center md:text-left">
                         <h1 className="text-5xl font-bold text-gray-900 mb-12">
-                            Get services<br />anywhere .
+                            Get services<br />anywhere.
                         </h1>
 
                         <div className="space-y-4">

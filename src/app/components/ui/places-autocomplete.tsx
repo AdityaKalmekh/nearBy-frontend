@@ -8,13 +8,24 @@ import usePlacesAutocomplete, {
 } from 'use-places-autocomplete';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useLocation } from "@/app/hooks/useLocation";
+import React from "react";
 
 interface Location {
     lat: number,
     lng: number,
 }
 
-export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocation: (location: Location) => void, setRequestError: (err: string | null) => void }) => {
+interface PlacesAutocompleteProps {
+    setLocation: (location: Location) => void;
+    setRequestError: (err: string | null) => void;
+    // location: string;
+}
+
+export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
+    setLocation,
+    setRequestError,
+    // location
+}) => {
     const {
         ready,
         value,
@@ -39,10 +50,10 @@ export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocat
         getLocation
     } = useLocation();
 
-    const handleYourLocation = async() => {
+    const handleYourLocation = async () => {
         const currenLocation = await getLocation();
         console.log(currenLocation);
-        
+
         const formateLocation = {
             lat: currenLocation.coordinates[1],
             lng: currenLocation.coordinates[0]
@@ -124,7 +135,7 @@ export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocat
             <input
                 ref={inputRef}
                 type="text"
-                className="w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full md:w-4/5 pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your location"
                 value={value}
                 onChange={(e) => {
@@ -144,7 +155,7 @@ export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocat
             />
 
             {/* Custom Suggestions Dropdown */}
-            <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border overflow-hidden">
+            <div className="absolute z-50 w-full md:w-4/5 mt-1 bg-white rounded-md shadow-lg border overflow-hidden">
                 <ul
                     id="suggestions-list"
                     className="max-h-60 overflow-auto divide-y divide-gray-100"
@@ -153,23 +164,23 @@ export const PlacesAutocomplete = ({ setLocation , setRequestError }: { setLocat
                     {/* Your location option */}
                     {showSuggestions && status !== "OK" && (
                         <li
-                        ref={(el: HTMLLIElement | null) => {
-                            suggestionRefs.current[0] = el
-                        }}
-                        id="suggestion-0"
-                        role="option"
-                        aria-selected={selectedIndex === 0}
-                        className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
-                            }`}
-                        onClick={handleYourLocation}
-                    >
-                        <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-2 text-blue-500" />
-                            <span className="text-sm font-semibold text-black">
-                                Your location
-                            </span>
-                        </div>
-                    </li>
+                            ref={(el: HTMLLIElement | null) => {
+                                suggestionRefs.current[0] = el
+                            }}
+                            id="suggestion-0"
+                            role="option"
+                            aria-selected={selectedIndex === 0}
+                            className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === 0 ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                }`}
+                            onClick={handleYourLocation}
+                        >
+                            <div className="flex items-center">
+                                <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                                <span className="text-sm font-semibold text-black">
+                                    Your location
+                                </span>
+                            </div>
+                        </li>
                     )}
 
                     {/* Google Places suggestions */}

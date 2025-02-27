@@ -131,7 +131,7 @@ export const RequesterTracking: React.FC<Props> = ({
                             {/* PIN Section */}
                             <div className="mb-6">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <span className="text-sm">Share PIN with Driver</span>
+                                    <span className="text-sm">Share PIN with Provider</span>
                                     <button>
                                         <Info className="h-4 w-4 text-gray-500" />
                                     </button>
