@@ -1,6 +1,6 @@
 import { useClickOutside } from "@/app/hooks/useClickOutside";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, MapPin, Search } from "lucide-react";
+import { AlertCircle, MapPin, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import usePlacesAutocomplete, {
     getGeocode,
@@ -129,13 +129,21 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         return { mainText, secondaryText };
     };
 
+    const handleClear = () => {
+        setValue('');
+        setShowSuggestions(false);
+        setError(null);
+        setRequestError(null);
+        inputRef.current?.focus();
+    }
+
     return (
         <div ref={searchRef} className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-3 top-4 h-4 w-4 text-gray-500" />
             <input
                 ref={inputRef}
                 type="text"
-                className="w-full lg:w-4/5 pl-10 pr-4 py-2.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full lg:w-4/5 pl-10 pr-10 py-2 border text-ellipsis overflow-hidden whitespace-nowrap rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-[17px]"
                 placeholder="Enter your location"
                 value={value}
                 onChange={(e) => {
@@ -153,6 +161,16 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                 role='combobox'
                 aria-expanded={showSuggestions}
             />
+            {value && (
+                <button
+                    type="button"
+                    onClick={handleClear}
+                    className="absolute right-0 md:right-[20%] top-1/2 transform -translate-y-1/2 -translate-x-3 text-black pointer-events-auto"
+                    aria-label="Clear location"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            )}
 
             {/* <div className="absolute right-0 md:right-[20%] top-1/2 transform -translate-y-1/2 -translate-x-3 text-gray-500 pointer-events-none">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

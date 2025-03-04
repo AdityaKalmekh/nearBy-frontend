@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "./components/providers/providers";
+import { GoogleMapsProvider } from "@/contexts/googleMaps-context";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,7 +31,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          {children}
+          <GoogleMapsProvider>
+            {children}
+          </GoogleMapsProvider>
         </Providers>
       </body>
     </html>

@@ -16,7 +16,8 @@ import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import React from "react";
 import VisitingChargeModal from "./modal/VisitingCharge";
-import { useLoadScript } from "@react-google-maps/api";
+// import { useLoadScript } from "@react-google-maps/api";
+import { useGoogleMaps } from "@/contexts/googleMaps-context";
 
 interface RequestDetailsProps {
     setLocation: (location: Location) => void;
@@ -43,7 +44,7 @@ const INITIAL_SERVICES: Service[] = [
     'Cleaning'
 ];
 
-const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
+// const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 
 export const RequestDetails: React.FC<RequestDetailsProps> = ({
     setLocation,
@@ -56,12 +57,13 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
 }) => {
     const [selectedService, setSelectedService] = useState<string>();
     const [error, setError] = useState<string | null>(null);
+    const { isLoaded } = useGoogleMaps();
     // const [modalOpen, setModalOpen] = useState(false);
 
-    const { isLoaded } = useLoadScript({
-        googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-        libraries: ['places']
-    });
+    // const { isLoaded } = useLoadScript({
+    //     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+    //     libraries: ['places']
+    // });
 
     const handleServiceSelect = (service: string) => {
         // setSelectedServices(prev => [...prev, service]);
@@ -84,6 +86,7 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
             </div>
         );
     }
+
     return (
         <>
             <div>
@@ -98,10 +101,10 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
                     <div className="space-y-2">
                         {/* <label className="text-sm font-medium">Select Services</label> */}
                         <Select onValueChange={handleServiceSelect}>
-                            <SelectTrigger className="w-full lg:w-4/5">
+                            <SelectTrigger className="w-full lg:w-4/5 px-4 py-2 h-[42px] text-[16px] space-x-2">
                                 <SelectValue placeholder="Select services..." />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="p-2">
                                 <SelectGroup>
                                     {/* {availableServices.map((service) => (
                                             <SelectItem key={service} value={service}>
@@ -109,7 +112,10 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
                                             </SelectItem>
                                         ))} */}
                                     {INITIAL_SERVICES.map((service) => (
-                                        <SelectItem key={service} value={service} >
+                                        <SelectItem 
+                                        key={service} 
+                                        value={service} 
+                                        className="hover:bg-gray-100 cursor-pointer">
                                             {service}
                                         </SelectItem>
                                     ))}
@@ -123,7 +129,7 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
                         </Alert>
                     )}
                     <Button
-                        className="w-full lg:w-4/5"
+                        className="w-full lg:w-4/5 h-[42px]"
                         disabled={!selectedService || isLoading || !location}
                         onClick={viewPrices}
                     >
