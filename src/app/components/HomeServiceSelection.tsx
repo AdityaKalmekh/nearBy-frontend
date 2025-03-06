@@ -16,6 +16,7 @@ const HomeServicesSection = () => {
     const [location, setLocation] = useState<Location | null>(null);
     // const [selectedService, setSelectedService] = useState<string>();
     const [modalOpen, setModalOpen] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
 
     const viewPrices = () => {
@@ -42,6 +43,8 @@ const HomeServicesSection = () => {
                         setModalOpen={setModalOpen}
                         modalOpen={modalOpen}
                         handleContinue={handleContinue}
+                        error={error}
+                        setError={setError}
                     />
                 </div>
                 {/* Right Section - Services Illustration */}

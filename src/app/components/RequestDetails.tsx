@@ -27,6 +27,8 @@ interface RequestDetailsProps {
     setModalOpen: (modalOpen: boolean) => void;
     modalOpen: boolean;
     handleContinue: () => void;
+    error: string | null;
+    setError: (error: string | null) => void;
 }
 
 interface Location {
@@ -53,10 +55,12 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
     viewPrices,
     setModalOpen,
     modalOpen,
-    handleContinue
+    handleContinue,
+    error,
+    setError
 }) => {
     const [selectedService, setSelectedService] = useState<string>();
-    const [error, setError] = useState<string | null>(null);
+    // const [error, setError] = useState<string | null>(null);
     const { isLoaded } = useGoogleMaps();
     // const [modalOpen, setModalOpen] = useState(false);
 

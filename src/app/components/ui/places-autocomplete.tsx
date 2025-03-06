@@ -137,6 +137,11 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         inputRef.current?.focus();
     }
 
+    const focusHandler = () => {
+        setShowSuggestions(true);
+        setRequestError(null);
+    }
+
     return (
         <div ref={searchRef} className="relative">
             <Search className="absolute left-3 top-4 h-4 w-4 text-gray-500" />
@@ -152,7 +157,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                     setError(null);
                     setRequestError(null);
                 }}
-                onFocus={() => setShowSuggestions(true)}
+                onFocus={focusHandler}
                 onKeyDown={handleKeyDown}
                 disabled={!ready}
                 aria-autocomplete="list"
@@ -244,7 +249,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
             </div>
 
             {error && (
-                <Alert variant="destructive" className="mt-2">
+                <Alert variant="destructive" className="mt-2 w-4/5">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>

@@ -43,9 +43,6 @@ const Page = () => {
         [location]
     );
 
-    console.log({ error });
-    console.log({ modalOpen });
-
     const mapOptions = useMemo<google.maps.MapOptions>(() => ({
         disableDefaultUI: true,
         clickableIcons: true,
@@ -167,6 +164,8 @@ const Page = () => {
                         setModalOpen={setModalOpen}
                         modalOpen={modalOpen}
                         handleContinue={handleContinue}
+                        error={error}
+                        setError={setError}
                     />
                 </div>
                 {/* Right Panel - Map */}
