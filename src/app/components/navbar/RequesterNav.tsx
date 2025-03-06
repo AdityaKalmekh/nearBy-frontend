@@ -1,5 +1,7 @@
-import React from 'react';
-import { Car, Activity, ChevronDown } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Car, Activity, ChevronDown, HelpCircle, Wallet, User, Tag, Settings, LogOut } from 'lucide-react';
+import { useAuth } from '@/app/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
   onRideClick?: () => void;
@@ -9,9 +11,62 @@ interface NavbarProps {
 
 const RequesterNavbar: React.FC<NavbarProps> = ({
   onRideClick,
-  onActivityClick,
-  onProfileClick
+  onActivityClick
 }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const { logout } = useAuth();
+
+  // Check if the screen is mobile (below md breakpoint)
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobileView(window.innerWidth < 500);
+      if (window.innerWidth < 500){
+        setIsProfileOpen(false);
+      }
+    };
+
+    // Check initially
+    checkIfMobile();
+
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+
+    // Cleanup
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleProfileDropdown = () => {
+    // Only toggle dropdown if not in mobile view
+    if (!isMobileView) {
+      setIsProfileOpen(!isProfileOpen);
+    } else {
+      setIsProfileOpen(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    logout();
+    router.push('/');
+  }
+
   return (
     <nav className="border-b border-gray-200 bg-white">
       <div className="max-w-[1440px] mx-auto px-4 h-16 flex items-center justify-between">
@@ -28,7 +83,7 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
             className="flex items-center px-3 md:px-4 py-2 border-b-2 border-black font-medium"
           >
             <Car className="h-5 w-5 md:mr-2" />
-            <span className="hidden md:inline">Ride</span>
+            <span className="hidden sm:inline">Ride</span>
           </button>
         </div>
 
@@ -39,32 +94,72 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
             onClick={onActivityClick}
             className="flex items-center px-2 md:px-3 py-2 hover:bg-gray-50 rounded-full font-medium mr-2 md:mr-4"
           >
-            <Activity className="h-5 w-5" />
+            {/* <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg> */}
+            <Activity className='h-5 w-5' />
             <span className="hidden md:inline ml-2">Activity</span>
           </button>
 
-          {/* Profile Button */}
-          <button
-            onClick={onProfileClick}
-            className="flex items-center px-2 md:px-3 py-2 hover:bg-gray-50 rounded-full"
-          >
-            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-              <svg
-                className="h-5 w-5 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-            </div>
-            <ChevronDown className="h-5 w-5 text-gray-500 ml-2 hidden md:block" />
-          </button>
+          {/* Profile Button with Dropdown */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={toggleProfileDropdown}
+              className="flex items-center px-2 md:px-3 py-2 hover:bg-gray-50 rounded-full"
+            >
+              <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                <svg
+                  className="h-5 w-5 text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <ChevronDown className={`h-5 w-5 text-gray-500 ml-2 hidden md:block transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Profile Dropdown */}
+            {isProfileOpen && (
+              <div className="absolute right-0 mt-4 w-52 bg-gray-200 rounded-md shadow-lg z-10">
+                {/* <div className="py-1"> */}
+                <a href="#help" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100 rounded-md">
+                  <HelpCircle className="h-5 w-5 mr-3" />
+                  <span>Help</span>
+                </a>
+                <a href="#wallet" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                  <Wallet className="h-5 w-5 mr-3" />
+                  <span>Wallet</span>
+                </a>
+                <a href="#account" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                  <User className="h-5 w-5 mr-3" />
+                  <span>Manage account</span>
+                </a>
+                <a href="#promotions" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                  <Tag className="h-5 w-5 mr-3" />
+                  <span>Promotions</span>
+                </a>
+                <a href="#settings" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                  <Settings className="h-5 w-5 mr-3" />
+                  <span>Settings</span>
+                </a>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left flex items-center px-4 py-3 text-sm hover:bg-gray-100"
+                >
+                  <LogOut className="h-5 w-5 mr-3" />
+                  <span>Sign out</span>
+                </button>
+                {/* </div> */}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>
