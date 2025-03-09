@@ -17,7 +17,6 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
   const [isMobileView, setIsMobileView] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
   const { logout } = useAuth();
 
   // Check if the screen is mobile (below md breakpoint)
@@ -92,7 +91,7 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
           {/* Activity Button */}
           <button
             onClick={onActivityClick}
-            className="flex items-center px-2 md:px-3 py-2 hover:bg-gray-50 rounded-full font-medium mr-2 md:mr-4"
+            className="flex items-center px-2 md:px-3 py-4 hover:bg-gray-50 rounded-full font-medium mr-2 md:mr-4"
           >
             {/* <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
@@ -102,8 +101,13 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Profile Button with Dropdown */}
-          <div className="relative" ref={dropdownRef}>
-            <button
+          <div 
+          className="relative" 
+          ref={dropdownRef}
+          // onMouseEnter={() => !isMobileView && setIsProfileOpen(true)}
+          // onMouseLeave={() => !isMobileView && setIsProfileOpen(false)}
+          >
+            <div
               onClick={toggleProfileDropdown}
               className="flex items-center px-2 md:px-3 py-2 hover:bg-gray-50 rounded-full"
             >
@@ -123,35 +127,35 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
                 </svg>
               </div>
               <ChevronDown className={`h-5 w-5 text-gray-500 ml-2 hidden md:block transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
-            </button>
+            </div>
 
             {/* Profile Dropdown */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-4 w-52 bg-gray-200 rounded-md shadow-lg z-10">
+              <div className="absolute right-0 mt-3   w-52 bg-gray-100 rounded-md shadow-lg z-10">
                 {/* <div className="py-1"> */}
-                <a href="#help" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100 rounded-md">
+                <a href="#help" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-md">
                   <HelpCircle className="h-5 w-5 mr-3" />
                   <span>Help</span>
                 </a>
-                <a href="#wallet" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                <a href="#wallet" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
                   <Wallet className="h-5 w-5 mr-3" />
                   <span>Wallet</span>
                 </a>
-                <a href="#account" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                <a href="#account" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
                   <User className="h-5 w-5 mr-3" />
                   <span>Manage account</span>
                 </a>
-                <a href="#promotions" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                <a href="#promotions" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
                   <Tag className="h-5 w-5 mr-3" />
                   <span>Promotions</span>
                 </a>
-                <a href="#settings" className="flex items-center px-4 py-3 text-sm hover:bg-gray-100">
+                <a href="#settings" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
                   <Settings className="h-5 w-5 mr-3" />
                   <span>Settings</span>
                 </a>
                 <button
                   onClick={handleSignOut}
-                  className="w-full text-left flex items-center px-4 py-3 text-sm hover:bg-gray-100"
+                  className="w-full text-left flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-md"
                 >
                   <LogOut className="h-5 w-5 mr-3" />
                   <span>Sign out</span>

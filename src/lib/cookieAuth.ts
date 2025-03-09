@@ -112,6 +112,9 @@ export const cookieAuth = {
         Cookies.remove(AUTH_TOKEN);
         Cookies.remove(USER_ID_SECRET_KEY);
         Cookies.remove(REFRESH_TOKEN);
+        Cookies.remove(PROVIDER_ID);
+        Cookies.remove(PROVIDER_ID_SECRET_KEY);
+        // Cookies.remove()
     },
 
     clearInitiateUserData(): void {

@@ -1,7 +1,10 @@
 import { Switch } from "@/components/ui/switch"
+import { useAuthContext } from "@/contexts/auth-context";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/react"
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
-import { Bell, User } from "lucide-react";
+import { Bell, ChevronDown, HelpCircle, LogOut, Settings, Tag, User, Wallet } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface ProviderDropdownProps {
     isTracking: boolean;
@@ -11,8 +14,37 @@ interface ProviderDropdownProps {
 const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
     isTracking,
     handleStatusChange
-
 }) => {
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
+    const { user, logout } = useAuthContext();
+
+    // console.log({ user });
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    const handleSignOut = () => {
+        logout();
+        router.push("/");
+    }
+
+    const toggleProfileDropdown = () => {
+        setIsProfileOpen(!isProfileOpen);
+    }
+
     return (
         <Disclosure as="nav" className="bg-black">
             {({ open }) => (
@@ -27,7 +59,6 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
                             {/* Mobile menu button */}
                             <div className="flex lg:hidden">
                                 <DisclosureButton className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors">
-                                    {/* <Menu className="h-6 w-6" /> */}
                                     <span className="sr-only">Open main menu</span>
                                     {open ? (
                                         <XMarkIcon className="h-6 w-6" aria-hidden="true" />
@@ -37,7 +68,9 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
                                 </DisclosureButton>
                             </div>
 
-                            <div className="hidden lg:flex items-center space-x-6">
+                            <div
+                                className="hidden lg:flex items-center space-x-6"
+                                ref={dropdownRef}>
                                 {/* Existing controls */}
                                 <div className="flex items-center space-x-2">
                                     <span className="text-sm text-white">
@@ -56,16 +89,48 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
                                     </span>
                                 </button>
 
-                                <div className="flex items-center space-x-3">
-                                    {/* <img
-                                    src="/api/placeholder/32/32"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full bg-gray-300"
-                                /> */}
-                                    <User className="h-5 w-5 text-white" />
-                                    <div className="text-sm text-white">
-                                        <div>Dean Sanchez</div>
-                                    </div>
+                                <div className="relative">
+                                    <button
+                                        className="flex items-center space-x-1 hover:bg-zinc-800 px-2 py-2 rounded-lg"
+                                        onClick={toggleProfileDropdown}>
+                                        <User className="h-5 w-5 text-white" />
+                                        <div className="text-sm text-white">
+                                            <div>{user?.firstName}</div>
+                                        </div>
+                                        <ChevronDown className={`h-5 w-5 mt-1 text-gray-500 hidden md:block transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isProfileOpen && (
+                                        <div className="absolute top-full right-0 mt-5 w-52 bg-gray-100 rounded-md shadow-lg z-10">
+                                            <a href="#help" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-t-md">
+                                                <HelpCircle className="h-5 w-5 mr-3" />
+                                                <span>Help</span>
+                                            </a>
+                                            <a href="#wallet" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                                <Wallet className="h-5 w-5 mr-3" />
+                                                <span>Wallet</span>
+                                            </a>
+                                            <a href="#account" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                                <User className="h-5 w-5 mr-3" />
+                                                <span>Manage account</span>
+                                            </a>
+                                            <a href="#promotions" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                                <Tag className="h-5 w-5 mr-3" />
+                                                <span>Promotions</span>
+                                            </a>
+                                            <a href="#settings" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                                <Settings className="h-5 w-5 mr-3" />
+                                                <span>Settings</span>
+                                            </a>
+                                            <button
+                                                onClick={handleSignOut}
+                                                className="w-full text-left flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-b-md"
+                                            >
+                                                <LogOut className="h-5 w-5 mr-3" />
+                                                <span>Sign out</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -73,8 +138,8 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
 
                     {/* Mobile menu panel */}
                     <DisclosurePanel className="lg:hidden bg-black">
-                        <div className="px-4 pt-2 pb-3 space-y-1">
-                            <div className="flex items-center justify-between py-2">
+                        <div className="px-4 pt-2 pb-3 space-y-4">
+                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-white">
                                     {isTracking ? 'Available' : 'Unavailable'}
                                 </span>
@@ -84,25 +149,60 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
                                     className="data-[state=checked]:bg-green-500"
                                 />
                             </div>
-                            <button className="relative">
+
+                            <div className="flex items-center justify-between mr-2">
+                                <div className="flex space-x-1">
+                                    <User className="h-5 w-5 text-white" />
+                                    <div className="text-sm text-white">
+                                        <div>Dean Sanchez</div>
+                                    </div>
+                                </div>
+                                <button
+                                    className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-zinc-800"
+                                    onClick={toggleProfileDropdown}
+                                >
+                                    <ChevronDown className={`h-5 w-5 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
+
+                            {isProfileOpen && (
+                                <div className="mt-2 bg-gray-100 rounded-md shadow-lg">
+                                    <a href="#help" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-t-md">
+                                        <HelpCircle className="h-5 w-5 mr-3" />
+                                        <span>Help</span>
+                                    </a>
+                                    <a href="#wallet" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                        <Wallet className="h-5 w-5 mr-3" />
+                                        <span>Wallet</span>
+                                    </a>
+                                    <a href="#account" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                        <User className="h-5 w-5 mr-3" />
+                                        <span>Manage account</span>
+                                    </a>
+                                    <a href="#promotions" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                        <Tag className="h-5 w-5 mr-3" />
+                                        <span>Promotions</span>
+                                    </a>
+                                    <a href="#settings" className="flex items-center px-4 py-3 text-sm hover:bg-stone-200">
+                                        <Settings className="h-5 w-5 mr-3" />
+                                        <span>Settings</span>
+                                    </a>
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="w-full text-left flex items-center px-4 py-3 text-sm hover:bg-stone-200 rounded-b-md"
+                                    >
+                                        <LogOut className="h-5 w-5 mr-3" />
+                                        <span>Sign out</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            <button className="relative flex items-center">
                                 <Bell className="h-6 w-6 text-white" />
                                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
                                     3
                                 </span>
                             </button>
-
-                            <div className="flex items-center space-x-3">
-                                {/* <img
-                                    src="/api/placeholder/32/32"
-                                    alt="Profile"
-                                    className="w-8 h-8 rounded-full bg-gray-300"
-                                /> */}
-                                <User className="h-5 w-5 text-white" />
-                                <div className="text-sm text-white">
-                                    <div>Dean Sanchez</div>
-                                </div>
-                            </div>
-                            {/* ... other mobile menu items ... */}
                         </div>
                     </DisclosurePanel>
                 </>
