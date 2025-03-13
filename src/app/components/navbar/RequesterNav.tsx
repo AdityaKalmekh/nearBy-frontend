@@ -62,6 +62,7 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
   };
 
   const handleSignOut = async () => {
+    setIsProfileOpen(false);
     const success = await logout();
     if (typeof success === 'boolean' && success) {
       router.push('/');
@@ -71,11 +72,11 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
   return (
     <div>
       {isLoading && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50">
           <Loader2 className="h-10 w-10 animate-spin text-blue-700" />
         </div>
       )}
-      
+
       <nav className="border-b border-gray-200 bg-white">
         <div className="max-w-[1440px] mx-auto px-4 h-16 flex items-center justify-between">
           {/* Left Section - Logo and Ride */}
