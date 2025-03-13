@@ -23,7 +23,7 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobileView(window.innerWidth < 500);
-      if (window.innerWidth < 500){
+      if (window.innerWidth < 500) {
         setIsProfileOpen(false);
       }
     };
@@ -61,9 +61,11 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
     }
   };
 
-  const handleSignOut = () => {
-    logout();
-    router.push('/');
+  const handleSignOut = async () => {
+    const success = await logout();
+    if (typeof success === 'boolean' && success) {
+      router.push('/');
+    }
   }
 
   return (
@@ -101,9 +103,9 @@ const RequesterNavbar: React.FC<NavbarProps> = ({
           </button>
 
           {/* Profile Button with Dropdown */}
-          <div 
-          className="relative" 
-          ref={dropdownRef}
+          <div
+            className="relative"
+            ref={dropdownRef}
           // onMouseEnter={() => !isMobileView && setIsProfileOpen(true)}
           // onMouseLeave={() => !isMobileView && setIsProfileOpen(false)}
           >

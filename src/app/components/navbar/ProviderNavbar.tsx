@@ -36,9 +36,11 @@ const ProviderNavbar: React.FC<ProviderDropdownProps> = ({
         };
     }, []);
 
-    const handleSignOut = () => {
-        logout();
-        router.push("/");
+    const handleSignOut = async () => {
+        const success = await logout();
+        if (typeof success === 'boolean' && success) {
+            router.push('/');
+        }
     }
 
     const toggleProfileDropdown = () => {

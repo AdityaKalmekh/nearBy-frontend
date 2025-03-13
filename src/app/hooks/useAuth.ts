@@ -109,6 +109,10 @@ interface ResendOTPResponse {
     otp: string;
 }
 
+interface LogoutResponse {
+    success: boolean;
+}
+
 type ProviderResponse = {
     success: boolean,
     message: string,
@@ -251,7 +255,7 @@ export const useAuth = (): AuthContextType => {
 
     const signUp = async (formData: FormData): Promise<signUpResult> => {
         return new Promise((resolve) => {
-            sendRequest({   
+            sendRequest({
                 url: 'details',
                 method: 'PATCH',
                 data: formData
@@ -306,13 +310,13 @@ export const useAuth = (): AuthContextType => {
                 const providerResponse = response as ProviderResponse;
                 if (providerResponse.success) {
                     cookieAuth.updateUserData({
-                            encryptedPId: providerResponse.encryptedPId,
-                            encryptionPKey: providerResponse.encryptionPKey
-                        });
+                        encryptedPId: providerResponse.encryptedPId,
+                        encryptionPKey: providerResponse.encryptionPKey
+                    });
                     const providerId = decryptUserId(
                         JSON.parse(providerResponse.encryptedPId),
                         providerResponse.encryptionPKey);
-                
+
                     setAuthState((prev) => {
                         if (!prev.user) {
                             return prev;
@@ -353,8 +357,22 @@ export const useAuth = (): AuthContextType => {
         })
     }
 
-    const logout = () => {
-        cookieAuth.clearAuthCookies();
+    const logout = async (): Promise<boolean> => {
+        return new Promise((resolve) => {
+            sendRequest({
+                url: 'logout',
+                method: 'DELETE',
+                data: { userId: authState.userId }
+            }, (response) => {
+                const logoutResponse = response as LogoutResponse;
+                if (logoutResponse.success) {
+                    cookieAuth.clearAuthCookies();
+                    resolve(true);
+                } else {
+                    resolve(false);
+                }
+            })
+        });
     }
 
     return {
