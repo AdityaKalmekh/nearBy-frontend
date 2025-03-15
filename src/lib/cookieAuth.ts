@@ -44,6 +44,7 @@ const USER_ID = 'uid_cli';
 const USER_ID_SECRET_KEY = 'diukey_cli';
 const PROVIDER_ID = 'puid_cli';
 const PROVIDER_ID_SECRET_KEY = 'puidkey_cli';
+const CURRENT_STATUS = 'current_status';
 
 // Cookie configuration
 const AUTH_COOKIE_OPTIONS: Cookies.CookieAttributes = {
@@ -101,6 +102,7 @@ export const cookieAuth = {
         if (puid && puidkey) {
             Cookies.set(PROVIDER_ID, puid, USERID_COOKIES_OPTIONS);
             Cookies.set(PROVIDER_ID_SECRET_KEY, puidkey, USERID_COOKIES_OPTIONS);
+            Cookies.set(CURRENT_STATUS, JSON.stringify("0"), USERID_COOKIES_OPTIONS);
         }
     },
 
@@ -202,6 +204,32 @@ export const cookieAuth = {
                 }));
             }
         }
+    },
+
+    providerStatusHandler() {
+        const getCurrentStatus = Cookies.get(CURRENT_STATUS);
+
+        if (!getCurrentStatus) {
+            console.error("Current status not found");
+            return;
+        }
+        
+        const currentState : string = JSON.parse(getCurrentStatus);
+        if (currentState === "0") {
+            Cookies.set(CURRENT_STATUS, JSON.stringify('1'), USERID_COOKIES_OPTIONS);
+        }else {
+            Cookies.set(CURRENT_STATUS, JSON.stringify('0'), USERID_COOKIES_OPTIONS);
+        }
+    },
+
+    getProviderStatus() {
+        const getCurrentStatus = Cookies.get(CURRENT_STATUS);
+        if (!getCurrentStatus) {
+            console.error("Current status not found");
+            return;
+        }
+        
+        return getCurrentStatus;
     },
 
     getSessionId(): string | undefined {

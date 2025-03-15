@@ -206,7 +206,6 @@ export const useAuth = (): AuthContextType => {
                 data: verificationOTP
             }, (response) => {
                 const userVerification = response as UserVerificationResponse;
-                console.log(userVerification);
                 if (userVerification.success) {
                     cookieAuth.setAuthCookies(userVerification.authToken,
                         userVerification.refreshToken,

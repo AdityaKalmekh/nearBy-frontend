@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useInterval } from './useInterval';
 import { LocationData, useLocation } from './useLocation';
 import { LOCATION_UPDATE_INTERVAL } from '../constants';
+import { cookieAuth } from '@/lib/cookieAuth';
 
 interface TrackingApiResponse {
     success: boolean;
@@ -15,7 +16,7 @@ export const useLocationTracking = (providerId: string | undefined) => {
     const [error, setError] = useState<string | null>(null);
     const [updateInterval, setUpdateInterval] = useState<NodeJS.Timeout | null>(null);
 
-     const {
+    const {
         location,
         locationStatus,
         locationError,
@@ -130,13 +131,16 @@ export const useLocationTracking = (providerId: string | undefined) => {
 
                 if (success) {
                     setIsTracking(true);
+                    cookieAuth.providerStatusHandler();
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Failed to start tracking');
                 setIsTracking(false);
+                cookieAuth.providerStatusHandler();
             }
         } else {
             stopTracking();
+            cookieAuth.providerStatusHandler();
         }
     };
 
