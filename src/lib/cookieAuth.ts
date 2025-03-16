@@ -193,6 +193,7 @@ export const cookieAuth = {
                 }));
                 Cookies.set(PROVIDER_ID, updateUserData.encryptedPId, USERID_COOKIES_OPTIONS);
                 Cookies.set(PROVIDER_ID_SECRET_KEY, updateUserData.encryptionPKey, USERID_COOKIES_OPTIONS);
+                Cookies.set(CURRENT_STATUS, JSON.stringify("0"), USERID_COOKIES_OPTIONS);
             }
         } else {
             const existingData = Cookies.get(USER_DATA);
