@@ -116,6 +116,7 @@ export const cookieAuth = {
         Cookies.remove(REFRESH_TOKEN);
         Cookies.remove(PROVIDER_ID);
         Cookies.remove(PROVIDER_ID_SECRET_KEY);
+        Cookies.remove(CURRENT_STATUS);
         // Cookies.remove()
     },
 
@@ -162,7 +163,7 @@ export const cookieAuth = {
             return {
                 user,
                 userId,
-                providerId : ''
+                providerId: ''
             };
         } catch (error) {
             console.error('Error getting user data:', error);
@@ -213,23 +214,33 @@ export const cookieAuth = {
             console.error("Current status not found");
             return;
         }
-        
-        const currentState : string = JSON.parse(getCurrentStatus);
+
+        const currentState: string = JSON.parse(getCurrentStatus);
         if (currentState === "0") {
             Cookies.set(CURRENT_STATUS, JSON.stringify('1'), USERID_COOKIES_OPTIONS);
-        }else {
+        } else {
             Cookies.set(CURRENT_STATUS, JSON.stringify('0'), USERID_COOKIES_OPTIONS);
         }
     },
 
-    getProviderStatus() {
+    getProviderWorkingStatus(): boolean {
+        // Check if we're in the browser environment
+        if (typeof window === 'undefined') {
+            return false; // Default value during server-side rendering
+        }
+
         const getCurrentStatus = Cookies.get(CURRENT_STATUS);
         if (!getCurrentStatus) {
-            console.error("Current status not found");
-            return;
+            console.debug("Current status not found");
+            return false;
         }
-        
-        return getCurrentStatus;
+
+        const parseCurrentState: string = JSON.parse(getCurrentStatus);
+        if (parseCurrentState === '0') {
+            return false;
+        } else {
+            return true;
+        }
     },
 
     getSessionId(): string | undefined {

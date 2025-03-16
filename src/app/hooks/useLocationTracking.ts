@@ -12,10 +12,10 @@ interface TrackingApiResponse {
 }
 
 export const useLocationTracking = (providerId: string | undefined) => {
-    const [isTracking, setIsTracking] = useState(false);
+    const [isTracking, setIsTracking] = useState(cookieAuth.getProviderWorkingStatus());
     const [error, setError] = useState<string | null>(null);
     const [updateInterval, setUpdateInterval] = useState<NodeJS.Timeout | null>(null);
-
+    
     const {
         location,
         locationStatus,
