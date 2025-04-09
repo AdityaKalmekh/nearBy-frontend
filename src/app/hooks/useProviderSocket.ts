@@ -125,7 +125,6 @@ export const useProviderSocket = (providerId: string | undefined) => {
         };
 
         const handleRequestUnavailable = () => {
-            console.log("Handle Request Unavailable is called");
             setActiveRequest(null);
             setNotGetRequest(true);
         }

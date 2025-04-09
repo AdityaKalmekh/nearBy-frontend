@@ -44,6 +44,7 @@ export function middleware(request: NextRequest) {
         const userRole = decodedPayload.role;
 
         const user = JSON.parse(userData.value);
+        
         if (!user) {
             const response = NextResponse.redirect(new URL('/', request.url));
             response.cookies.delete('AuthToken');

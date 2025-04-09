@@ -98,7 +98,7 @@ const Page = () => {
             });
 
             const data = await response.json();
-
+            
             if (data) {
                 setIsLoading(true);
             } else {

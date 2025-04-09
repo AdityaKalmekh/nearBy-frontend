@@ -299,7 +299,7 @@ export const useAuth = (): AuthContextType => {
         locationDetails: LocationData
     ): Promise<boolean> => {
         const requestData = { locationDetails, selectedServices };
-
+        
         return new Promise((resolve) => {
             sendRequest({
                 url: 'provider',
