@@ -168,19 +168,19 @@ const Page = () => {
                     )}
 
                     {notGetRequest && (
-                        <Card className="mb-3">
-                            <CardContent className="p-3">
-                                <div className="flex flex-col space-y-3">
+                        <Card className="mb-3 w-full">
+                            <CardContent className="p-3 sm:p-4">
+                                <div className="flex flex-col space-y-2 sm:space-y-3">
                                     <div className="flex items-center text-amber-700">
-                                        <AlertCircle className="h-5 w-5 mr-2" />
-                                        <h2 className="text-lg font-medium">Request Unavailable</h2>
+                                        <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+                                        <h2 className="text-base sm:text-lg font-medium">Request Unavailable</h2>
                                     </div>
-                                    <p className="text-gray-600">
+                                    <p className="text-sm sm:text-base text-gray-600">
                                         This request was assigned to another provider who was closer to the pickup location.
                                     </p>
                                     <Button
                                         variant="outline"
-                                        className="w-full sm:w-auto mt-2"
+                                        className="w-full sm:w-auto mt-1 text-sm py-1.5 sm:py-2"
                                         onClick={() => setNotGetRequest(false)}
                                     >
                                         Dismiss
