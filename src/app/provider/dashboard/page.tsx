@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, ClipboardList, Loader2, MapPin, Settings, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, ClipboardList, Loader2, MapPin, Settings, XCircle } from "lucide-react";
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button";
 import { useProviderSocket } from "@/app/hooks/useProviderSocket";
@@ -22,7 +22,9 @@ const Page = () => {
         handleAccept,
         handleReject,
         handleVerifyOTP,
-        socket
+        socket,
+        notGetRequest,
+        setNotGetRequest
     } = useProviderSocket(providerId);
     const {
         isTracking,
@@ -57,7 +59,7 @@ const Page = () => {
             </div>
         );
     }
-    
+
     const dummyData = Array(15).fill(0).map((_, index) => ({
         id: index + 1,
         date: 'Dec 29, 2024 14:30',
@@ -107,15 +109,12 @@ const Page = () => {
                                 <div className="flex flex-col space-y-2">
                                     <div className="flex justify-between items-center">
                                         <h2 className="text-xl font-semibold">New Request</h2>
-                                        {/* <Badge variant="secondary" className="text-sm"> */}
-                                        {/* {timer}s remaining */}
                                         <Badge
                                             variant="secondary"
                                             className={timer <= 3 ? 'bg-red-100 text-red-800' : ''}
                                         >
                                             {timer}s remaining
                                         </Badge>
-                                        {/* </Badge> */}
                                     </div>
                                     {/* {accepted && (
                                         <div className="flex items-center space-x-3">
@@ -163,6 +162,29 @@ const Page = () => {
                                             Reject Request
                                         </Button>
                                     </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {notGetRequest && (
+                        <Card className="mb-3">
+                            <CardContent className="p-3">
+                                <div className="flex flex-col space-y-3">
+                                    <div className="flex items-center text-amber-700">
+                                        <AlertCircle className="h-5 w-5 mr-2" />
+                                        <h2 className="text-lg font-medium">Request Unavailable</h2>
+                                    </div>
+                                    <p className="text-gray-600">
+                                        This request was assigned to another provider who was closer to the pickup location.
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        className="w-full sm:w-auto mt-2"
+                                        onClick={() => setNotGetRequest(false)}
+                                    >
+                                        Dismiss
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>

@@ -54,6 +54,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
     const [timer, setTimer] = useState<number>(20);
     const timerRef = useRef<NodeJS.Timeout>();
     const [accepted, setAccepted] = useState<boolean>(false);
+    const [notGetRequest, setNotGetRequest] = useState<boolean>(false);
     const { sendRequest } = useHttp();
     const socketRef = useRef<Socket | null>(null);
 
@@ -123,6 +124,11 @@ export const useProviderSocket = (providerId: string | undefined) => {
             }
         };
 
+        const handleRequestUnavailable = () => {
+            setActiveRequest(null);
+            setNotGetRequest(true);
+        }
+
         socket.on('connect', () => {
             console.log('Socket connected for provider:', socket.id);
             socket.emit('auth:provider', providerId);
@@ -152,6 +158,7 @@ export const useProviderSocket = (providerId: string | undefined) => {
         });
 
         socket.on('request:accepted', handleRequestAccepted);
+        socket.on('request:unavailable', handleRequestUnavailable);
         return () => {
             if (socket) {
                 socket.off('connect');
@@ -215,6 +222,8 @@ export const useProviderSocket = (providerId: string | undefined) => {
         handleAccept: () => handleRequest(true),
         handleReject: () => handleRequest(false),
         handleVerifyOTP,
-        socket: socketRef.current
+        socket: socketRef.current,
+        notGetRequest,
+        setNotGetRequest
     };
 };
