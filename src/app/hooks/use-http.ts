@@ -13,7 +13,7 @@ interface GetRequestConfig extends BaseRequestConfig {
 
 interface JsonRequestConfig<T> extends BaseRequestConfig {
     method: 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-    data: T;
+    data?: T;
 }
 
 type RequestConfig<T> = GetRequestConfig | JsonRequestConfig<T>;
