@@ -1,6 +1,7 @@
 import Cookies from 'js-cookie';
 import { decryptUserData, decryptUserId } from './dataDecrypt';
 import { InitiateUserData } from '@/app/hooks/useAuth';
+import { removeItem } from './requestStorage';
 
 // Types and Interfaces
 export interface UserData {
@@ -117,6 +118,9 @@ export const cookieAuth = {
         Cookies.remove(PROVIDER_ID);
         Cookies.remove(PROVIDER_ID_SECRET_KEY);
         Cookies.remove(CURRENT_STATUS);
+        removeItem('Loc-Txet');
+        removeItem('loc-info');
+        removeItem('which_s_t');
         // Cookies.remove()
     },
 

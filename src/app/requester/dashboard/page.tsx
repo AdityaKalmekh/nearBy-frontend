@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
@@ -31,8 +31,7 @@ const Page = () => {
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const { sendRequest } = useHttp();
-    // const [isInitialized, setIsInitialized] = useState(false);
-    const hasCalledApi = React.useRef(false);
+    const isInitializedRef = useRef(false);
 
     useRequesterSocket(userId, setError, setIsLoading);
 
@@ -42,7 +41,7 @@ const Page = () => {
     });
 
     // Function to check provider availability
-    const checkProviderAvailability = React.useCallback((locs: Location, serviceType: string) => {
+    const checkProviderAvailability = useCallback((locs: Location, serviceType: string) => {
         setIsLoading(true);
 
         const requestData = {
@@ -79,26 +78,22 @@ const Page = () => {
     // Load data from localStorage on component mount
     useEffect(() => {
         // Only proceed if the user is authenticated (not loading) and not already initialized
-        if (!loading && userId && !hasCalledApi.current) {
+        if (!loading && userId && !isInitializedRef.current) {
             try {
                 const storedLocation = getDecryptedItem('loc-info');
                 const storedService = getDecryptedItem('which_s_t');
-
+                
                 if (storedLocation && storedService) {
                     setLocation(storedLocation);
                     setSelectedService(storedService);
                     checkProviderAvailability(storedLocation, storedService);
                 }
-
+                
                 // Mark as initialized to prevent duplicate API calls
-                // setIsInitialized(true);
+                isInitializedRef.current = true;
             } catch (err) {
                 console.error("Error when retrieving data from session storage:", err);
             }
-        }
-
-        return () => {
-            hasCalledApi.current = false;
         }
     }, [loading, userId, checkProviderAvailability]);
 
@@ -298,49 +293,7 @@ const Page = () => {
             setError('Failed to submit request. Please try again.');
         }
     };
-
-    // const viewPrices = () => {
-    //     if (!location) {
-    //         setError("Please select a location");
-    //         return Promise.reject("Location not selected");
-    //     }
-
-    //     if (!selectedService) {
-    //         setError("Please select a service");
-    //         return Promise.reject("Service not selected");
-    //     }
-    //     return checkProviderAvailability(location, selectedService)
-    //     // setIsLoading(true);
-
-    //     // const requestData = {
-    //     //     longitude: location?.lng,
-    //     //     latitude: location?.lat,
-    //     //     userId,
-    //     //     serviceType: selectedService,
-    //     // };
-
-    //     // return new Promise((resolve, reject) => {
-    //     //     sendRequest({
-    //     //         url: '/providersAvailability',
-    //     //         method: 'POST',
-    //     //         data: requestData
-    //     //     }, (response) => {
-    //     //         setIsLoading(false);
-    //     //         const requestResponse = response as AvailabilityResponse;
-    //     //         if (requestResponse.Availability) {
-    //     //             setModalOpen(true);
-    //     //         } else {
-    //     //             setError('No providers available in your region at this moment.');
-    //     //         }
-    //     //         resolve(true);
-    //     //     }, (error) => {
-    //     //         setIsLoading(false);
-    //     //         setError('Failed to check provider availability. Please try again.');
-    //     //         reject(error);
-    //     //     });
-    //     // });
-    // };
-
+    
     const onClose = () => {
         setModalOpen(false);
     }
