@@ -31,7 +31,8 @@ const Page = () => {
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const { sendRequest } = useHttp();
-    const [isInitialized, setIsInitialized] = useState(false);
+    // const [isInitialized, setIsInitialized] = useState(false);
+    const hasCalledApi = React.useRef(false);
 
     useRequesterSocket(userId, setError, setIsLoading);
 
@@ -78,7 +79,7 @@ const Page = () => {
     // Load data from localStorage on component mount
     useEffect(() => {
         // Only proceed if the user is authenticated (not loading) and not already initialized
-        if (!loading && userId && !isInitialized) {
+        if (!loading && userId && !hasCalledApi.current) {
             try {
                 const storedLocation = getDecryptedItem('loc-info');
                 const storedService = getDecryptedItem('which_s_t');
@@ -90,14 +91,18 @@ const Page = () => {
                 }
 
                 // Mark as initialized to prevent duplicate API calls
-                setIsInitialized(true);
+                // setIsInitialized(true);
             } catch (err) {
                 console.error("Error when retrieving data from session storage:", err);
             }
         }
-    }, [loading, userId, isInitialized, checkProviderAvailability]);
 
-    const viewPrices = () => {
+        return () => {
+            hasCalledApi.current = false;
+        }
+    }, [loading, userId, checkProviderAvailability]);
+
+    const viewPrices = React.useCallback(() => {
         if (!location) {
             setError("Please select a location");
             return Promise.reject("Location not selected");
@@ -109,7 +114,7 @@ const Page = () => {
         }
 
         return checkProviderAvailability(location, selectedService);
-    };
+    }, [location, selectedService, checkProviderAvailability, setError]);
     // const checkProviderAvailability = (locs: Location, serviceType: string) => {
     //     setIsLoading(true);
 
