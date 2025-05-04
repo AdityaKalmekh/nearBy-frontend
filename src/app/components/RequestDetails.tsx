@@ -10,7 +10,6 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -18,6 +17,7 @@ import React from "react";
 import VisitingChargeModal from "./modal/VisitingCharge";
 // import { useLoadScript } from "@react-google-maps/api";
 import { useGoogleMaps } from "@/contexts/googleMaps-context";
+import { getDecryptedItem, setEncryptedItem } from "@/lib/requestStorage";
 
 interface RequestDetailsProps {
     setLocation: (location: Location) => void;
@@ -29,6 +29,8 @@ interface RequestDetailsProps {
     handleContinue: () => void;
     error: string | null;
     setError: (error: string | null) => void;
+    selectedService: string | undefined;
+    setSelectedService: (service: string) => void;
 }
 
 interface Location {
@@ -57,9 +59,11 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
     modalOpen,
     handleContinue,
     error,
-    setError
+    setError,
+    selectedService,
+    setSelectedService
 }) => {
-    const [selectedService, setSelectedService] = useState<string>();
+    // const [selectedService, setSelectedService] = useState<string>();
     // const [error, setError] = useState<string | null>(null);
     const { isLoaded } = useGoogleMaps();
     // const [modalOpen, setModalOpen] = useState(false);
@@ -72,10 +76,15 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
     const handleServiceSelect = (service: string) => {
         // setSelectedServices(prev => [...prev, service]);
         // setAvailableServices(prev => prev.filter(s => s !== service));
+        setEncryptedItem('which_s_t', JSON.stringify(service));
         setError(null);
         setSelectedService(service);
     };
-    console.log(error);
+
+    const setServiceValue = () => {
+        const serviceType = getDecryptedItem('which_s_t');
+        return serviceType
+    }
 
     const onClose = () => {
         setModalOpen(false);
@@ -104,8 +113,10 @@ export const RequestDetails: React.FC<RequestDetailsProps> = ({
                     </div>
                     <div className="space-y-2">
                         {/* <label className="text-sm font-medium">Select Services</label> */}
-                        <Select onValueChange={handleServiceSelect}>
-                            <SelectTrigger className="w-full lg:w-4/5 px-4 py-2 h-[42px] text-[16px] space-x-2">
+                        <Select 
+                            value={setServiceValue() || selectedService}
+                            onValueChange={handleServiceSelect}>
+                            <SelectTrigger className="w-full lg:w-4/5 px-4 py-2 h-[42px] text-[16px] space-x-2 focus:ring-1">
                                 <SelectValue placeholder="Select services..." />
                             </SelectTrigger>
                             <SelectContent className="p-2">

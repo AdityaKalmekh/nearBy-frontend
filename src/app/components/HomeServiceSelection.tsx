@@ -6,6 +6,7 @@ import logo from '@/assets/images/Group 3.jpg'
 // import { Search } from 'lucide-react';
 import { RequestDetails } from './RequestDetails';
 import { useRouter } from 'next/navigation';
+import { setEncryptedItem } from '@/lib/requestStorage';
 
 interface Location {
     lat: number,
@@ -14,17 +15,21 @@ interface Location {
 
 const HomeServicesSection = () => {
     const [location, setLocation] = useState<Location | null>(null);
-    // const [selectedService, setSelectedService] = useState<string>();
     const [modalOpen, setModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedService, setSelectedService] = useState<string>();
     const router = useRouter();
 
     const viewPrices = () => {
-        setModalOpen(true);
+        setEncryptedItem('loc-info', JSON.stringify(location));
+        router.push('/requester');
+        // setModalOpen(true);
     }
 
     const handleContinue = () => {
-        router.push('/requester');
+        // console.log("This line is logged");
+        // console.log('This is the location detail ', location);
+        // router.push('/requester');
     }
 
     return (
@@ -45,6 +50,8 @@ const HomeServicesSection = () => {
                         handleContinue={handleContinue}
                         error={error}
                         setError={setError}
+                        selectedService={selectedService}
+                        setSelectedService={setSelectedService}
                     />
                 </div>
                 {/* Right Section - Services Illustration */}

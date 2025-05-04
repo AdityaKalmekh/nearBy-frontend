@@ -9,6 +9,7 @@ import usePlacesAutocomplete, {
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useLocation } from "@/app/hooks/useLocation";
 import React from "react";
+import { getDecryptedItem, removeItem, setEncryptedItem } from "@/lib/requestStorage";
 
 interface Location {
     lat: number,
@@ -62,6 +63,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     }
 
     const handleSelect = async (address: string) => {
+        setEncryptedItem('Loc-Txet', JSON.stringify(address));
         setValue(address, false);
         clearSuggestions();
         setShowSuggestions(false);
@@ -130,6 +132,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     };
 
     const handleClear = () => {
+        removeItem('Loc-Txet');
         setValue('');
         setShowSuggestions(false);
         setError(null);
@@ -138,20 +141,33 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     }
 
     const focusHandler = () => {
+        const getValue = getDecryptedItem('Loc-Txet');
+        setValue(getValue);
         setShowSuggestions(true);
         setRequestError(null);
     }
 
+    const locationField = () => {
+        const getLocationText = getDecryptedItem('Loc-Txet');
+        if (getLocationText) {
+            return getLocationText;
+        }
+        return '';
+    }
+
+    console.log({ value });
+    
     return (
         <div ref={searchRef} className="relative">
             <Search className="absolute left-3 top-4 h-4 w-4 text-gray-500" />
             <input
                 ref={inputRef}
                 type="text"
-                className="w-full lg:w-4/5 pl-10 pr-10 py-2 border text-ellipsis overflow-hidden whitespace-nowrap rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 text-[17px]"
+                className="w-full lg:w-4/5 pl-10 pr-10 py-2 border text-ellipsis overflow-hidden whitespace-nowrap rounded-md focus:outline-none focus:ring-1 focus:ring-black text-[17px]"
                 placeholder="Enter your location"
-                value={value}
+                value={value || locationField()}
                 onChange={(e) => {
+                    removeItem('Loc-Txet');
                     setValue(e.target.value);
                     setShowSuggestions(true);
                     setError(null);
@@ -204,7 +220,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                             onClick={handleYourLocation}
                         >
                             <div className="flex items-center">
-                                <MapPin className="h-4 w-4 mr-2 text-blue-500" />
+                                <MapPin className="h-4 w-4 mr-2 to-black" />
                                 <span className="text-sm font-semibold text-black">
                                     Your location
                                 </span>

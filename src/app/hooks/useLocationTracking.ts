@@ -86,7 +86,7 @@ export const useLocationTracking = (providerId: string | undefined) => {
 
         // Start watching position
         watchPositionIdRef.current = navigator.geolocation.watchPosition(
-            (position) => {
+            (position) => {                
                 // Check if movement is significant enough to report
                 if (isSignificantMovement(position)) {
                     const { latitude, longitude, accuracy } = position.coords;

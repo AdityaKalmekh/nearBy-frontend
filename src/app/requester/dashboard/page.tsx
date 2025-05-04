@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
 import { CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useAuthContext } from '@/contexts/auth-context';
 import useHttp from '@/app/hooks/use-http';
 import RequesterNavbar from '@/app/components/navbar/RequesterNav';
 import { RequestDetails } from '@/app/components/RequestDetails';
+import { getDecryptedItem } from '@/lib/requestStorage';
 
 const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 interface Location {
@@ -24,7 +25,7 @@ const Page = () => {
     const { loading, userId } = useAuthContext();
     // const [availableServices, setAvailableServices] = useState<Service[]>(INITIAL_SERVICES);
     // const [selectedServices, setSelectedServices] = useState<Service[]>([]);
-    // const [selectedService, setSelectedService] = useState<string>();
+    const [selectedService, setSelectedService] = useState<string>();
     const [location, setLocation] = useState<Location | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,55 @@ const Page = () => {
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries: ['places']
     });
+
+    // Load data from localStorage on component mount
+    useEffect(() => {
+        // Only proceed if the user is authenticated (not loading)
+        const viewPrices = (locs: Location, serviceType: string) => {
+            setIsLoading(true);
+
+            const requestData = {
+                longitude: locs?.lng,
+                latitude: locs?.lat,
+                userId,
+                serviceType: serviceType
+            };
+
+            return new Promise((resolve, reject) => {
+                sendRequest({
+                    url: '/providersAvailability',
+                    method: 'POST',
+                    data: requestData
+                }, (response) => {
+                    setIsLoading(false);
+                    const requestResponse = response as AvailabilityResponse;
+                    if (requestResponse.Availability) {
+                        setModalOpen(true);
+                    } else {
+                        setError('No providers available in your region at this moment.');
+                    }
+                    resolve(true);
+                }, (error) => {
+                    setIsLoading(false);
+                    setError('Failed to check provider availability. Please try again.');
+                    reject(error);
+                });
+            });
+        }
+
+        if (!loading && userId) {
+            try {
+                const storedLocation = getDecryptedItem('loc-info');
+                const storedService = getDecryptedItem('which_s_t');
+                if (storedLocation && storedService) {
+                    setLocation(storedLocation);
+                    viewPrices(storedLocation, storedService);
+                }
+            } catch (err) {
+                console.error("Error which retrieving data from session storage:", err);
+            }
+        }
+    }, [loading, userId, sendRequest]);
 
     const mapCenter = useMemo(() =>
         location ? { lat: location.lat, lng: location.lng } : { lat: 20, lng: 0 },
@@ -98,7 +148,7 @@ const Page = () => {
             });
 
             const data = await response.json();
-            
+
             if (data) {
                 setIsLoading(true);
             } else {
@@ -112,12 +162,24 @@ const Page = () => {
     };
 
     const viewPrices = () => {
+        if (!location) {
+            setError("Please select a location");
+            return Promise.reject("Location not selected");
+        }
+
+        if (!selectedService) {
+            setError("Please select a service");
+            return Promise.reject("Service not selected");
+        }
+
+        setIsLoading(true);
+
         const requestData = {
             longitude: location?.lng,
             latitude: location?.lat,
             userId,
-            // services: selectedServices,
-        }
+            serviceType: selectedService,
+        };
 
         return new Promise((resolve, reject) => {
             sendRequest({
@@ -125,21 +187,21 @@ const Page = () => {
                 method: 'POST',
                 data: requestData
             }, (response) => {
+                setIsLoading(false);
                 const requestResponse = response as AvailabilityResponse;
                 if (requestResponse.Availability) {
                     setModalOpen(true);
                 } else {
                     setError('No providers available in your region at this moment.');
-                    setIsLoading(false);
                 }
                 resolve(true);
-            },
-                (error) => {
-                    reject(error);
-                }
-            );
+            }, (error) => {
+                setIsLoading(false);
+                setError('Failed to check provider availability. Please try again.');
+                reject(error);
+            });
         });
-    }
+    };
 
     const onClose = () => {
         setModalOpen(false);
@@ -166,6 +228,8 @@ const Page = () => {
                         handleContinue={handleContinue}
                         error={error}
                         setError={setError}
+                        selectedService={selectedService}
+                        setSelectedService={setSelectedService}
                     />
                 </div>
                 {/* Right Panel - Map */}

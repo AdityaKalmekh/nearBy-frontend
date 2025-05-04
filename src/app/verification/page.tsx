@@ -65,7 +65,7 @@ const Page = () => {
             isNewUser: user.isNewUser!
         };
         const { status, success, role } = await verifyOtp(verificationData);
-
+            
         if (success) {
             if (status === 'pending') {
                 router.push("/signup");
