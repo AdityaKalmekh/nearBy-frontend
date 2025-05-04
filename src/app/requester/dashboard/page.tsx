@@ -9,7 +9,7 @@ import { useAuthContext } from '@/contexts/auth-context';
 import useHttp from '@/app/hooks/use-http';
 import RequesterNavbar from '@/app/components/navbar/RequesterNav';
 import { RequestDetails } from '@/app/components/RequestDetails';
-import { getDecryptedItem } from '@/lib/requestStorage';
+import { getDecryptedItem, removeItem } from '@/lib/requestStorage';
 
 const GOOGLE_MAPS_API_KEY = `${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API}`;
 interface Location {
@@ -31,6 +31,7 @@ const Page = () => {
     const [error, setError] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const { sendRequest } = useHttp();
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useRequesterSocket(userId, setError, setIsLoading);
 
@@ -39,54 +40,183 @@ const Page = () => {
         libraries: ['places']
     });
 
+    // Function to check provider availability
+    const checkProviderAvailability = React.useCallback((locs: Location, serviceType: string) => {
+        setIsLoading(true);
+
+        const requestData = {
+            longitude: locs?.lng,
+            latitude: locs?.lat,
+            userId,
+            serviceType: serviceType
+        };
+
+        return new Promise((resolve, reject) => {
+            sendRequest({
+                url: '/providersAvailability',
+                method: 'POST',
+                data: requestData
+            }, (response) => {
+                setIsLoading(false);
+                const requestResponse = response as AvailabilityResponse;
+                console.log({ requestResponse });
+                if (requestResponse.Availability) {
+                    setModalOpen(true);
+                    setSelectedService(serviceType);
+                } else {
+                    setError('No providers available in your region at this moment.');
+                }
+                resolve(true);
+            }, (error) => {
+                setIsLoading(false);
+                setError('Failed to check provider availability. Please try again.');
+                reject(error);
+            });
+        });
+    }, [sendRequest, userId, setIsLoading, setError, setModalOpen]);
+
     // Load data from localStorage on component mount
     useEffect(() => {
-        // Only proceed if the user is authenticated (not loading)
-        const viewPrices = (locs: Location, serviceType: string) => {
-            setIsLoading(true);
-
-            const requestData = {
-                longitude: locs?.lng,
-                latitude: locs?.lat,
-                userId,
-                serviceType: serviceType
-            };
-
-            return new Promise((resolve, reject) => {
-                sendRequest({
-                    url: '/providersAvailability',
-                    method: 'POST',
-                    data: requestData
-                }, (response) => {
-                    setIsLoading(false);
-                    const requestResponse = response as AvailabilityResponse;
-                    if (requestResponse.Availability) {
-                        setModalOpen(true);
-                    } else {
-                        setError('No providers available in your region at this moment.');
-                    }
-                    resolve(true);
-                }, (error) => {
-                    setIsLoading(false);
-                    setError('Failed to check provider availability. Please try again.');
-                    reject(error);
-                });
-            });
-        }
-
-        if (!loading && userId) {
+        // Only proceed if the user is authenticated (not loading) and not already initialized
+        if (!loading && userId && !isInitialized) {
             try {
                 const storedLocation = getDecryptedItem('loc-info');
                 const storedService = getDecryptedItem('which_s_t');
+
                 if (storedLocation && storedService) {
                     setLocation(storedLocation);
-                    viewPrices(storedLocation, storedService);
+                    setSelectedService(storedService);
+                    checkProviderAvailability(storedLocation, storedService);
                 }
+
+                // Mark as initialized to prevent duplicate API calls
+                setIsInitialized(true);
             } catch (err) {
-                console.error("Error which retrieving data from session storage:", err);
+                console.error("Error when retrieving data from session storage:", err);
             }
         }
-    }, [loading, userId, sendRequest]);
+    }, [loading, userId, isInitialized, checkProviderAvailability]);
+
+    const viewPrices = () => {
+        if (!location) {
+            setError("Please select a location");
+            return Promise.reject("Location not selected");
+        }
+
+        if (!selectedService) {
+            setError("Please select a service");
+            return Promise.reject("Service not selected");
+        }
+
+        return checkProviderAvailability(location, selectedService);
+    };
+    // const checkProviderAvailability = (locs: Location, serviceType: string) => {
+    //     setIsLoading(true);
+
+    //     const requestData = {
+    //         longitude: locs?.lng,
+    //         latitude: locs?.lat,
+    //         userId,
+    //         // serviceType: serviceType
+    //     };
+
+    //     return new Promise((resolve, reject) => {
+    //         sendRequest({
+    //             url: '/providersAvailability',
+    //             method: 'POST',
+    //             data: requestData
+    //         }, (response) => {
+    //             setIsLoading(false);
+    //             const requestResponse = response as AvailabilityResponse;
+    //             console.log({ requestResponse });
+    //             if (requestResponse.Availability) {
+    //                 setModalOpen(true);
+    //                 setSelectedService(serviceType);
+    //             } else {
+    //                 setError('No providers available in your region at this moment.');
+    //             }
+    //             resolve(true);
+    //         }, (error) => {
+    //             setIsLoading(false);
+    //             setError('Failed to check provider availability. Please try again.');
+    //             reject(error);
+    //         });
+    //     });
+    // };
+
+    // Load data from localStorage on component mount
+    // useEffect(() => {
+    //     // Only proceed if the user is authenticated (not loading)
+    //     const viewPrices = (locs: Location, serviceType: string) => {
+    //         setIsLoading(true);
+
+    //         const requestData = {
+    //             longitude: locs?.lng,
+    //             latitude: locs?.lat,
+    //             userId,
+    //             serviceType: serviceType
+    //         };
+
+    //         return new Promise((resolve, reject) => {
+    //             sendRequest({
+    //                 url: '/providersAvailability',
+    //                 method: 'POST',
+    //                 data: requestData
+    //             }, (response) => {
+    //                 setIsLoading(false);
+    //                 const requestResponse = response as AvailabilityResponse;
+    //                 console.log({ requestResponse });
+    //                 if (requestResponse.Availability) {
+    //                     setModalOpen(true);
+    //                 } else {
+    //                     setError('No providers available in your region at this moment.');
+    //                 }
+    //                 resolve(true);
+    //             }, (error) => {
+    //                 setIsLoading(false);
+    //                 setError('Failed to check provider availability. Please try again.');
+    //                 reject(error);
+    //             });
+    //         });
+    //     }
+
+    //     if (!loading && userId) {
+    //         try {
+    //             const storedLocation = getDecryptedItem('loc-info');
+    //             const storedService = getDecryptedItem('which_s_t');
+    //             if (storedLocation && storedService) {
+    //                 setLocation(storedLocation);
+    //                 viewPrices(storedLocation, storedService);
+    //             }
+    //         } catch (err) {
+    //             console.error("Error which retrieving data from session storage:", err);
+    //         }
+    //     }
+    // }, [loading, userId, sendRequest]);
+
+    // Load data from localStorage on component mount
+    // useEffect(() => {
+    //     // Only proceed if the user is authenticated (not loading)
+    //     if (!loading && userId && !isRedirected) {
+    //         try {
+    //             const storedLocation = getDecryptedItem('loc-info');
+    //             const storedService = getDecryptedItem('which_s_t');
+
+    //             if (storedLocation && storedService) {
+    //                 setLocation(storedLocation);
+    //                 setSelectedService(storedService);
+    //                 setIsRedirected(true); // Mark as redirected to prevent multiple calls
+
+    //                 // Slight delay to ensure state updates have propagated
+    //                 setTimeout(() => {
+    //                     checkProviderAvailability(storedLocation, storedService);
+    //                 }, 100);
+    //             }
+    //         } catch (err) {
+    //             console.error("Error when retrieving data from session storage:", err);
+    //         }
+    //     }
+    // }, [loading, userId, isRedirected]);
 
     const mapCenter = useMemo(() =>
         location ? { lat: location.lat, lng: location.lng } : { lat: 20, lng: 0 },
@@ -126,6 +256,9 @@ const Page = () => {
     // }
 
     const handleContinue = async () => {
+        removeItem('which_s_t');
+        removeItem('loc-info');
+        removeItem('Loc-Txet');
         setIsLoading(true);
         setError(null);
         onClose();
@@ -161,47 +294,47 @@ const Page = () => {
         }
     };
 
-    const viewPrices = () => {
-        if (!location) {
-            setError("Please select a location");
-            return Promise.reject("Location not selected");
-        }
+    // const viewPrices = () => {
+    //     if (!location) {
+    //         setError("Please select a location");
+    //         return Promise.reject("Location not selected");
+    //     }
 
-        if (!selectedService) {
-            setError("Please select a service");
-            return Promise.reject("Service not selected");
-        }
+    //     if (!selectedService) {
+    //         setError("Please select a service");
+    //         return Promise.reject("Service not selected");
+    //     }
+    //     return checkProviderAvailability(location, selectedService)
+    //     // setIsLoading(true);
 
-        setIsLoading(true);
+    //     // const requestData = {
+    //     //     longitude: location?.lng,
+    //     //     latitude: location?.lat,
+    //     //     userId,
+    //     //     serviceType: selectedService,
+    //     // };
 
-        const requestData = {
-            longitude: location?.lng,
-            latitude: location?.lat,
-            userId,
-            serviceType: selectedService,
-        };
-
-        return new Promise((resolve, reject) => {
-            sendRequest({
-                url: '/providersAvailability',
-                method: 'POST',
-                data: requestData
-            }, (response) => {
-                setIsLoading(false);
-                const requestResponse = response as AvailabilityResponse;
-                if (requestResponse.Availability) {
-                    setModalOpen(true);
-                } else {
-                    setError('No providers available in your region at this moment.');
-                }
-                resolve(true);
-            }, (error) => {
-                setIsLoading(false);
-                setError('Failed to check provider availability. Please try again.');
-                reject(error);
-            });
-        });
-    };
+    //     // return new Promise((resolve, reject) => {
+    //     //     sendRequest({
+    //     //         url: '/providersAvailability',
+    //     //         method: 'POST',
+    //     //         data: requestData
+    //     //     }, (response) => {
+    //     //         setIsLoading(false);
+    //     //         const requestResponse = response as AvailabilityResponse;
+    //     //         if (requestResponse.Availability) {
+    //     //             setModalOpen(true);
+    //     //         } else {
+    //     //             setError('No providers available in your region at this moment.');
+    //     //         }
+    //     //         resolve(true);
+    //     //     }, (error) => {
+    //     //         setIsLoading(false);
+    //     //         setError('Failed to check provider availability. Please try again.');
+    //     //         reject(error);
+    //     //     });
+    //     // });
+    // };
 
     const onClose = () => {
         setModalOpen(false);
