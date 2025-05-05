@@ -20,7 +20,7 @@ import { useGoogleMaps } from "@/contexts/googleMaps-context";
 import { getDecryptedItem, setEncryptedItem } from "@/lib/requestStorage";
 
 interface RequestDetailsProps {
-    setLocation: (location: Location) => void;
+    setLocation: (location: Location | null) => void;
     location: Location | null;
     isLoading?: boolean;
     viewPrices: () => void;

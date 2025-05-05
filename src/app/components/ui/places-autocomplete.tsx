@@ -17,7 +17,7 @@ interface Location {
 }
 
 interface PlacesAutocompleteProps {
-    setLocation: (location: Location) => void;
+    setLocation: (location: Location | null) => void;
     setRequestError: (err: string | null) => void;
     location: Location | null;
 }
@@ -51,6 +51,12 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         getLocation
     } = useLocation();
 
+    useEffect(() => {
+        const locationText = getDecryptedItem('Loc-Txet');
+        setValue(locationText);
+        setShowSuggestions(false);
+    },[setValue]);
+
     const handleYourLocation = async () => {
         const currenLocation = await getLocation();
         console.log(currenLocation);
@@ -61,7 +67,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         }
         setLocation(formateLocation);
     }
-
+    
     const handleSelect = async (address: string) => {
         setEncryptedItem('Loc-Txet', JSON.stringify(address));
         setValue(address, false);
@@ -132,7 +138,9 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     };
 
     const handleClear = () => {
+        removeItem('loc-info');
         removeItem('Loc-Txet');
+        setLocation(null);
         setValue('');
         setShowSuggestions(false);
         setError(null);
@@ -141,8 +149,6 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
     }
 
     const focusHandler = () => {
-        const getValue = getDecryptedItem('Loc-Txet');
-        setValue(getValue);
         setShowSuggestions(true);
         setRequestError(null);
     }
@@ -154,8 +160,6 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
         }
         return '';
     }
-
-    console.log({ value });
     
     return (
         <div ref={searchRef} className="relative">
@@ -229,7 +233,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                     )}
 
                     {/* Google Places suggestions */}
-                    {status === "OK" && data.map(({ place_id, description, structured_formatting }, index) => {
+                    {showSuggestions && status === "OK" && data.map(({ place_id, description, structured_formatting }, index) => {
                         const { mainText, secondaryText } = structured_formatting
                             ? {
                                 mainText: structured_formatting.main_text,
