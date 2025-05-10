@@ -250,7 +250,7 @@ export const PlacesAutocomplete: React.FC<PlacesAutocompleteProps> = ({
                                 id={`suggestion-${index}`}
                                 role="option"
                                 aria-selected={selectedIndex === index}
-                                className={`px-4 py-3 cursor-pointer transition-colors ${selectedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'
+                                className={`px-4 py-3 cursor-pointer transition-colors text-left ${selectedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'
                                     }`}
                                 onClick={() => handleSelect(structured_formatting.main_text + ', ' + structured_formatting.secondary_text)}
                             >
